@@ -1,10 +1,6 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  extends: [
-    "local>hayden/renovate-config",
-    "local>hayden/phoebe//.renovate/groups.json5",
-    "local>hayden/phoebe//.renovate/autoMerge.json5",
-  ],
+  extends: ["local>hayden/renovate-config"],
   packageRules: [
     {
       description: "Group all rust toolchain updates together",
