@@ -28,14 +28,15 @@ pub struct AuthContext {
 impl AuthContext {
     pub fn new(
         storage: Arc<dyn TacticaStorage>,
-        jwt: JwtContext
-    ) -> Self {
-        Self {
+        jwt: JwtContext,
+        salt: String,
+    ) -> Result<Self, argon2::password_hash::phc::Error> {
+        Ok(Self {
             storage,
             jwt,
 
-            salt: SaltString::generate(),
-        }
+            salt: SaltString::from_b64(&salt)?,
+        })
     }
 
     pub fn storage(&self) -> Arc<dyn TacticaStorage> {

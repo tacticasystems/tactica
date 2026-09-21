@@ -51,7 +51,10 @@ async fn main() {
     let auth_context = tactica_auth::AuthContext::new(
         Arc::new(conn.clone()),
         jwt_context,
-    );
+        std::env::var("TACTICA_AUTH_SALT")
+            .expect("TACTICA_AUTH_SALT must be set")
+    )
+        .expect("Failed to create AuthContext");
 
     let listen_addr: SocketAddr = std::env::var("TACTICA_LISTEN_ADDR")
         .unwrap_or_else(|_| "0.0.0.0:8080".to_string())
