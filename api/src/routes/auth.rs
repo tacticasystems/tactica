@@ -86,28 +86,31 @@ async fn me(
     Storage(stg): Storage,
     Principal(principal): Principal,
 ) -> Result<impl IntoResponse> {
-    if let tactica_auth::principal::Principal::User(user_id) = principal {
-        println!("Authenticated user ID: {}", user_id);
+    match principal {
+        tactica_auth::principal::Principal::User(user_id) => {
+            println!("Authenticated user ID: {}", user_id);
 
-        let user = UserStore::get(stg.as_ref(), user_id).await?;
-        if let Some(user) = user {
-            Ok(Json(v1::auth::MeResponse {
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                display_name: user.display_name,
-                icon_url: user.icon_url,
-                banner_url: user.banner_url,
-                biography: user.biography,
-                is_active: user.is_active,
-                is_superuser: user.is_superuser,
-                created_at: user.created_at,
-                updated_at: user.updated_at,
-            }))
-        } else {
-            Err(Error::Unauthorized("User not found".to_string()))
-        }
-    } else {
-        return Err(Error::Unauthorized("Invalid principal type".to_string()));
+            let user = UserStore::get(stg.as_ref(), user_id).await?;
+            if let Some(user) = user {
+                Ok(Json(v1::auth::MeResponse {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    display_name: user.display_name,
+                    icon_url: user.icon_url,
+                    banner_url: user.banner_url,
+                    biography: user.biography,
+                    is_active: user.is_active,
+                    is_superuser: user.is_superuser,
+                    created_at: user.created_at,
+                    updated_at: user.updated_at,
+                }))
+            } else {
+                Err(Error::Unauthorized("User not found".to_string()))
+            }
+        },
+
+        #[allow(unused)]
+        _ => Err(Error::Unauthorized("Invalid principal type".to_string()))
     }
 }
