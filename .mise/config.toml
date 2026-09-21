@@ -60,3 +60,17 @@ run = "cargo deny --all-features check"
 description = "Build docs with warnings as errors"
 env = { RUSTDOCFLAGS = "-D warnings" }
 run = "cargo doc --workspace --all-features --no-deps"
+
+[tasks.build-docker]
+description = "Build docker image for the API"
+usage = """
+arg "<bin>" help="The binary to build"
+"""
+env.RUST_VERSION = { tools = true, value = "{{ tools.rust.version }}" }
+run = """
+docker build . \
+  --build-arg BIN=${usage_bin} \
+  --build-arg RUST_VERSION=${RUST_VERSION} \
+  --file Dockerfile \
+  --tag "${TACTICA_IMAGE_PREFIX:-git.hayden.moe/tactica/tactica}/api:${TACTICA_IMAGE_TAG:-dev}" \
+"""

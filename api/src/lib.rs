@@ -1,9 +1,14 @@
 use std::time::Duration;
 
-use axum::{Router, extract::DefaultBodyLimit, http::StatusCode};
+use axum::{
+    Router,
+    extract::DefaultBodyLimit,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use tower_http::{limit::RequestBodyLimitLayer, timeout::TimeoutLayer};
 
-use crate::state::ApiState;
+use crate::{error::Error, state::ApiState};
 
 mod error;
 mod routes;
@@ -22,6 +27,7 @@ fn routes(state: ApiState) -> Router {
     let ordinary = Router::new()
         .merge(routes::auth::router().with_state(state.clone()))
         .layer(RequestBodyLimitLayer::new(MAX_BODY_BYTES))
+        .fallback(async || -> Response { Error::NotFound.into_response() })
         .with_state(state);
 
     ordinary
