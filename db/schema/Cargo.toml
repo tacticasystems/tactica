@@ -1,0 +1,16 @@
+[package]
+name = "tactica-db-schema"
+version = "0.1.0"
+rust-version.workspace = true
+edition.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[features]
+default = ["migrations"]
+migrations = ["diesel_migrations", "diesel-async/migrations"]
+
+[dependencies]
+diesel.workspace = true
+diesel_migrations = { workspace = true, optional = true }
+diesel-async = { workspace = true, optional = true }

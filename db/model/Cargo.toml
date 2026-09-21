@@ -1,0 +1,27 @@
+[package]
+name = "tactica-db-model"
+version = "0.1.0"
+rust-version.workspace = true
+edition.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+mock = ["mockall"]
+
+[dependencies]
+tactica-uuid-kinds = { workspace = true, features = [
+  "serde",
+  "utoipa",
+  "chrono",
+  "diesel",
+] }
+tactica-db-schema.workspace = true
+diesel.workspace = true
+diesel-async.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+async-trait.workspace = true
+partial-struct.workspace = true
+mockall = { workspace = true, optional = true }
