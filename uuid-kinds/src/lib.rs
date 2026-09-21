@@ -115,5 +115,8 @@ macro_rules! impl_typed_uuid_kinds {
                     .into()
             }
         }
+
+        #[cfg(feature = "utoipa")]
+        impl utoipa::ToSchema for $ident {}
     };
 }

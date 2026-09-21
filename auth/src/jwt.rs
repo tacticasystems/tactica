@@ -1,7 +1,7 @@
 use std::{path::PathBuf, time::{Duration, Instant, SystemTime}};
 
 use chrono::Utc;
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, encode};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, encode};
 use serde::{Deserialize, Serialize};
 use tactica_uuid_kinds::UserId;
 
@@ -28,10 +28,10 @@ pub struct JwtContext {
 
 #[derive(Serialize, Deserialize)]
 pub struct Claims {
-    sub: String,
-    tty: String,
-    exp: i64,
-    nbf: i64,
+    pub sub: String,
+    pub tty: String,
+    pub exp: i64,
+    pub nbf: i64,
 }
 
 impl JwtContext {
@@ -85,7 +85,11 @@ impl JwtContext {
     }
 
     pub fn validate_jwt(&self, token: &str) -> Result<Claims, JwtError> {
-        let validation = jsonwebtoken::Validation::default();
+        let mut validation = jsonwebtoken::Validation::default();
+        validation.validate_nbf = true;
+        validation.validate_exp = true;
+        validation.algorithms = vec![Algorithm::EdDSA];
+
         let token_data = jsonwebtoken::decode::<Claims>(token, &self.decoding_key, &validation)
             .map_err(JwtError::KeyDecode)?;
         Ok(token_data.claims)

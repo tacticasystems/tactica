@@ -7,6 +7,7 @@ use crate::jwt::JwtContext;
 
 pub mod jwt;
 pub mod utils;
+pub mod principal;
 
 pub(crate) const ARGON2: OnceCell<Argon2> = OnceCell::const_new();
 

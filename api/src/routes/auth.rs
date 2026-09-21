@@ -1,13 +1,15 @@
+use axum::routing::get;
 use axum::{Json, Router, response::IntoResponse, routing::post};
 use tactica_api_types::v1;
 use tactica_db_model::UserStore;
 use anyhow::anyhow;
 
 use crate::error::{Error, Result};
-use crate::state::{ApiState, AuthCtx, Storage};
+use crate::state::{ApiState, AuthCtx, Principal, Storage};
 
 pub fn router() -> Router<ApiState> {
     Router::new()
+        .route("/api/v1/auth/me", get(me))
         .route("/api/v1/auth/login", post(login))
         .route("/api/v1/auth/register", post(register))
 }
@@ -28,13 +30,11 @@ async fn login(
     Json(body): Json<v1::auth::LoginRequest>,
 ) -> Result<impl IntoResponse> {
     let user = UserStore::get_by_username(stg.as_ref(), &body.username).await?;
-
     if user.is_none() {
         return Err(Error::Unauthorized(
             "invalid username or password".to_string(),
         ));
     }
-
     let user = user.unwrap();
 
     if user.password_hash.is_none() {
@@ -43,9 +43,12 @@ async fn login(
             "invalid username or password".to_string(),
         ));
     }
-
     let password_hash = user.password_hash.unwrap();
 
+    println!("{}", auth_ctx.hash_password(&body.password).await.map_err(|e| {
+        println!("Failed to hash password: {}", e);
+        Error::Other(anyhow!("failed to hash password: {}", e))
+    })?);
     if !auth_ctx
         .hash_password(&body.password)
         .await
@@ -77,4 +80,34 @@ async fn login(
 
 async fn register() -> &'static str {
     "register"
+}
+
+async fn me(
+    Storage(stg): Storage,
+    Principal(principal): Principal,
+) -> Result<impl IntoResponse> {
+    if let tactica_auth::principal::Principal::User(user_id) = principal {
+        println!("Authenticated user ID: {}", user_id);
+
+        let user = UserStore::get(stg.as_ref(), user_id).await?;
+        if let Some(user) = user {
+            Ok(Json(v1::auth::MeResponse {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                display_name: user.display_name,
+                icon_url: user.icon_url,
+                banner_url: user.banner_url,
+                biography: user.biography,
+                is_active: user.is_active,
+                is_superuser: user.is_superuser,
+                created_at: user.created_at,
+                updated_at: user.updated_at,
+            }))
+        } else {
+            Err(Error::Unauthorized("User not found".to_string()))
+        }
+    } else {
+        return Err(Error::Unauthorized("Invalid principal type".to_string()));
+    }
 }

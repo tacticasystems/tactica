@@ -8,8 +8,10 @@ publish.workspace = true
 
 [features]
 default = []
-utoipa = ["dep:utoipa"]
+utoipa = ["dep:utoipa", "utoipa/chrono", "tactica-uuid-kinds/utoipa"]
 
 [dependencies]
+tactica-uuid-kinds = { workspace = true, features = ["serde"] }
+chrono.workspace = true
 serde.workspace = true
 utoipa = { workspace = true, optional = true }
