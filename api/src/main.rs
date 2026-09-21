@@ -6,6 +6,10 @@ use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
+
     // TODO: replace with clap
     let database_url = std::env::var("TACTICA_DB_URL").expect("TACTICA_DB_URL must be set");
     let conn = tactica_db::PgConnection::new(&database_url)
@@ -18,6 +22,8 @@ async fn main() {
         .expect("Failed to parse TACTICA_RUN_MIGRATIONS");
 
     if should_run_migrations {
+        tracing::info!("running migrations...");
+
         let mut harness = AsyncMigrationHarness::new(
             conn
                 .pool()
@@ -28,6 +34,8 @@ async fn main() {
 
         harness.run_pending_migrations(MIGRATIONS)
             .expect("Failed to run migrations");
+
+        tracing::info!("migrations completed successfully");
 
         return;
     }
@@ -67,8 +75,9 @@ async fn main() {
         .await
         .expect("Failed to bind to listen address");
 
-    let router = router(state);
+    tracing::info!("listening on {}", listen_addr);
 
+    let router = router(state);
     axum::serve(listener, router)
         .await
         .expect("Failed to start server");

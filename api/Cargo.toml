@@ -18,6 +18,9 @@ utoipa.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
 tactica-api-types = { workspace = true, features = ["utoipa"] }
 tactica-auth.workspace = true
 tactica-db-schema = { workspace = true, features = ["migrations"] }
