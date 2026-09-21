@@ -1,0 +1,51 @@
+[graph]
+all-features = true
+no-default-features = false
+
+[advisories]
+version = 2
+yanked = "deny"
+ignore = []
+
+[licenses]
+version = 2
+confidence-threshold = 0.9
+private = { ignore = true }
+allow = [
+  "MIT",
+  "Apache-2.0",
+  "Unicode-3.0",
+  "MPL-2.0",
+  "BSD-3-Clause",
+]
+exceptions = []
+
+[bans]
+multiple-versions = "deny"
+wildcards = "deny"
+allow-wildcard-paths = true
+highlight = "all"
+workspace-default-features = "allow"
+external-default-features = "allow"
+allow = []
+# Use rustls for TLS. Permit OpenSSL only for WebAuthn attestation, where
+# webauthn-rs-core requires it unconditionally.
+deny = [
+  { crate = "openssl-sys" },
+  { crate = "native-tls" },
+]
+skip = [
+  { crate = "winnow@0.7.15" },
+  { crate = "wasi@0.11.1" },
+  { crate = "syn@2.0.119" },
+]
+skip-tree = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = [
+  # Useful for creating NewT structs from models, etc.
+  "https://github.com/oxidecomputer/partial-struct"
+]

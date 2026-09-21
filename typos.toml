@@ -1,0 +1,6 @@
+[files]
+extend-exclude = ["Cargo.lock", "target/"]
+
+[default]
+check-filename = true
+extend-ignore-identifiers-re = ["(?i)tactica"]
