@@ -32,12 +32,33 @@ async fn main() {
         return;
     }
 
+    let jwt_key_pub_path = std::env::var("TACTICA_JWT_KEY_PUB_PATH")
+        .expect("TACTICA_JWT_KEY_PUB_PATH must be set")
+        .parse()
+        .expect("Failed to parse TACTICA_JWT_KEY_PUB_PATH");
+
+    let jwt_key_priv_path = std::env::var("TACTICA_JWT_KEY_PRIV_PATH")
+        .expect("TACTICA_JWT_KEY_PRIV_PATH must be set")
+        .parse()
+        .expect("Failed to parse TACTICA_JWT_KEY_PRIV_PATH");
+
+    let jwt_context = tactica_auth::jwt::JwtContext::from_files(
+        &jwt_key_pub_path,
+        &jwt_key_priv_path,
+    )
+        .expect("Failed to create JWT context");
+
+    let auth_context = tactica_auth::AuthContext::new(
+        Arc::new(conn.clone()),
+        jwt_context,
+    );
+
     let listen_addr: SocketAddr = std::env::var("TACTICA_LISTEN_ADDR")
         .unwrap_or_else(|_| "0.0.0.0:8080".to_string())
         .parse()
         .expect("Failed to parse LISTEN_ADDR");
 
-    let state = ApiState::new(Arc::new(conn));
+    let state = ApiState::new(Arc::new(conn), Arc::new(auth_context));
 
     let listener = TcpListener::bind(listen_addr)
         .await

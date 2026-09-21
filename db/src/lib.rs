@@ -16,6 +16,7 @@ mod unit_role;
 mod unit_settings;
 mod user;
 
+#[derive(Debug, Clone)]
 pub struct PgConnection(Pool<AsyncPgConnection>);
 
 impl PgConnection {

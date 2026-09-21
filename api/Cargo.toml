@@ -19,6 +19,7 @@ thiserror.workspace = true
 anyhow.workspace = true
 
 tactica-api-types = { workspace = true, features = ["utoipa"] }
+tactica-auth.workspace = true
 tactica-db-schema = { workspace = true, features = ["migrations"] }
 tactica-db-model.workspace = true
 tactica-db.workspace = true

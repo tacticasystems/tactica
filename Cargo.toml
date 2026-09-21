@@ -46,8 +46,11 @@ tokio = { version = "1.53", features = ["rt-multi-thread", "macros"] }
 mockall = "0.15"
 partial-struct = { git = "https://github.com/oxidecomputer/partial-struct" }
 anyhow = "1.0"
+jsonwebtoken = { version = "11.1", features = ["rust_crypto"] }
+argon2 = { version = "0.6", features = ["rand_core"] }
 
 tactica-api-types = { path = "api/types" }
+tactica-auth = { path = "auth" }
 tactica-db = { path = "db" }
 tactica-db-schema = { path = "db/schema" }
 tactica-db-model = { path = "db/model" }
