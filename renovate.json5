@@ -1,0 +1,22 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    "local>hayden/renovate-config",
+    "local>hayden/phoebe//.renovate/groups.json5",
+    "local>hayden/phoebe//.renovate/autoMerge.json5",
+  ],
+  packageRules: [
+    {
+      description: "Group all rust toolchain updates together",
+      matchPackagePatterns: ["rust"],
+      groupName: "rust toolchain",
+    },
+    {
+      "description": "Group dev tools installed via mise/cargo install",
+      "matchPackageNames": [
+        "/^(cargo:)?(cargo-deny|cargo-machete|cargo-nextest|taplo-cli|typos-cli)$/"
+      ],
+      "groupName": "rust dev tools"
+    },
+  ],
+}
