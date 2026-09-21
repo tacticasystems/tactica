@@ -45,6 +45,7 @@ diesel-async = { version = "0.9", features = ["postgres", "pool", "bb8"] }
 tokio = { version = "1.53", features = ["rt-multi-thread", "macros"] }
 mockall = "0.15"
 partial-struct = { git = "https://github.com/oxidecomputer/partial-struct" }
+anyhow = "1.0"
 
 tactica-api-types = { path = "api/types" }
 tactica-db = { path = "db" }

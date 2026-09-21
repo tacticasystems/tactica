@@ -2,6 +2,7 @@ use axum::{Json, Router, response::IntoResponse, routing::post};
 use tactica_api_types::v1;
 use tactica_db_model::UserStore;
 
+use crate::error::{Error, Result};
 use crate::state::{ApiState, Storage};
 
 pub fn router() -> Router<ApiState> {
@@ -23,19 +24,13 @@ pub fn router() -> Router<ApiState> {
 async fn login(
     Storage(stg): Storage,
     Json(body): Json<v1::auth::LoginRequest>,
-) -> Result<impl IntoResponse, (axum::http::StatusCode, String)> {
-    let user = UserStore::get_by_username(
-        stg.as_ref(),
-        &body.username,
-    )
-        .await;
+) -> Result<impl IntoResponse> {
+    let user = UserStore::get_by_username(stg.as_ref(), &body.username).await?;
 
-    if user.is_err() {
-        return Err((axum::http::StatusCode::UNAUTHORIZED, "Invalid credentials".to_string()));
-    }
-
-    if user.unwrap().is_none() {
-        return Err((axum::http::StatusCode::UNAUTHORIZED, "Invalid credentials".to_string()));
+    if user.is_none() {
+        return Err(Error::Unauthorized(
+            "invalid username or password".to_string(),
+        ));
     }
 
     Ok(Json(v1::auth::LoginResponse {

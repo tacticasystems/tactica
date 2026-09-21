@@ -5,6 +5,7 @@ use tower_http::{limit::RequestBodyLimitLayer, timeout::TimeoutLayer};
 
 use crate::state::ApiState;
 
+mod error;
 mod routes;
 pub mod state;
 
