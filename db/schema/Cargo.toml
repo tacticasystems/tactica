@@ -7,7 +7,7 @@ repository.workspace = true
 publish.workspace = true
 
 [features]
-default = ["migrations"]
+default = []
 migrations = ["diesel_migrations", "diesel-async/migrations"]
 
 [dependencies]

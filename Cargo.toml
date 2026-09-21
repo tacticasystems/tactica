@@ -11,7 +11,7 @@ members = [
   "db/model",
 
   # utility crates
-  "uuid-kinds",
+  "uuid-kinds", "auth",
 ]
 
 [workspace.package]
@@ -39,8 +39,8 @@ syn = "2.0"
 proc-macro2 = "1.0"
 quote = "1.0"
 serde_tokenstream = "0.2"
-diesel = { version = "2.3", features = ["postgres", "chrono", "uuid"] }
-diesel_migrations = { version = "2.3", features = ["postgres"] }
+diesel = { version = "2.3", features = ["chrono", "uuid"] }
+diesel_migrations = { version = "2.3" }
 diesel-async = { version = "0.9", features = ["postgres", "pool", "bb8"] }
 tokio = { version = "1.53", features = ["rt-multi-thread", "macros"] }
 mockall = "0.15"

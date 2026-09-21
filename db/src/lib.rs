@@ -29,4 +29,8 @@ impl PgConnection {
     pub async fn conn(&self) -> Result<PooledConnection<'_, AsyncPgConnection>, RunError> {
         self.0.get().await
     }
+
+    pub fn pool(&self) -> Pool<AsyncPgConnection> {
+        self.0.clone()
+    }
 }
