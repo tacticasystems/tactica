@@ -17,6 +17,7 @@ rust = "1.98.1"
 "cargo:cargo-nextest" = "0.9.146"
 "aqua:tamasfe/taplo" = "0.10.0"
 "aqua:crate-ci/typos" = "1.50.2"
+"aqua:grafana/k6" = "2.3.0"
 
 [tasks.build]
 description = "Build all of the released components of the workspace"

@@ -87,6 +87,46 @@ checksum = "sha256:8474ca8bd72df497b7dee2272345bdea0d4926b18b708faea492fc9bcfd0b
 url = "https://github.com/crate-ci/typos/releases/download/v1.50.2/typos-v1.50.2-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/565798642"
 
+[[tools."aqua:grafana/k6"]]
+version = "2.3.0"
+backend = "aqua:grafana/k6"
+specifiers = ["2.3.0"]
+
+[tools."aqua:grafana/k6"."platforms.linux-arm64"]
+checksum = "sha256:5ca3433e8201da72a284aaa241a1bb5fb47f4abb4e384d39410ddd8062f49b90"
+url = "https://github.com/grafana/k6/releases/download/v2.3.0/k6-v2.3.0-linux-arm64.tar.gz"
+url_api = "https://api.github.com/repos/grafana/k6/releases/assets/579287780"
+
+[tools."aqua:grafana/k6"."platforms.linux-arm64-musl"]
+checksum = "sha256:5ca3433e8201da72a284aaa241a1bb5fb47f4abb4e384d39410ddd8062f49b90"
+url = "https://github.com/grafana/k6/releases/download/v2.3.0/k6-v2.3.0-linux-arm64.tar.gz"
+url_api = "https://api.github.com/repos/grafana/k6/releases/assets/579287780"
+
+[tools."aqua:grafana/k6"."platforms.linux-x64"]
+checksum = "sha256:39c3117b6af817592dcd0ce4242105c0a7af10948c2a425306f0be8f7a8a8ab1"
+url = "https://github.com/grafana/k6/releases/download/v2.3.0/k6-v2.3.0-linux-amd64.tar.gz"
+url_api = "https://api.github.com/repos/grafana/k6/releases/assets/579287772"
+
+[tools."aqua:grafana/k6"."platforms.linux-x64-musl"]
+checksum = "sha256:39c3117b6af817592dcd0ce4242105c0a7af10948c2a425306f0be8f7a8a8ab1"
+url = "https://github.com/grafana/k6/releases/download/v2.3.0/k6-v2.3.0-linux-amd64.tar.gz"
+url_api = "https://api.github.com/repos/grafana/k6/releases/assets/579287772"
+
+[tools."aqua:grafana/k6"."platforms.macos-arm64"]
+checksum = "sha256:b2417a3038edc5fe81dc178a889237724b595c5c9cfed875822008e46e862c7d"
+url = "https://github.com/grafana/k6/releases/download/v2.3.0/k6-v2.3.0-macos-arm64.zip"
+url_api = "https://api.github.com/repos/grafana/k6/releases/assets/579287879"
+
+[tools."aqua:grafana/k6"."platforms.macos-x64"]
+checksum = "sha256:c83bb16f54f0676afa4ea235fd757f3892d307dbd1bd201450de83af31986654"
+url = "https://github.com/grafana/k6/releases/download/v2.3.0/k6-v2.3.0-macos-amd64.zip"
+url_api = "https://api.github.com/repos/grafana/k6/releases/assets/579287803"
+
+[tools."aqua:grafana/k6"."platforms.windows-x64"]
+checksum = "sha256:112276d495e5741c968e2bc09ea6196099c1275bd6db9ee0875d173c7148ce43"
+url = "https://github.com/grafana/k6/releases/download/v2.3.0/k6-v2.3.0-windows-amd64.zip"
+url_api = "https://api.github.com/repos/grafana/k6/releases/assets/579287887"
+
 [[tools."aqua:nextest-rs/cargo-nextest"]]
 version = "0.9.146"
 backend = "aqua:nextest-rs/cargo-nextest"
