@@ -92,6 +92,8 @@ async fn me(Storage(stg): Storage, Principal(principal): Principal) -> Result<im
             } else {
                 Err(Error::Unauthorized("User not found".to_string()))
             }
-        } // _ => Err(Error::Unauthorized("Invalid principal type".to_string())),
+        }
+
+        _ => Err(Error::Unauthorized("Invalid principal type".to_string())),
     }
 }

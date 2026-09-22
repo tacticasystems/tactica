@@ -5,6 +5,7 @@ use crate::jwt::TokenType;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Principal {
     User(UserId),
+    Service(String),
 }
 
 impl Principal {
@@ -15,8 +16,7 @@ impl Principal {
 
                 Ok(Self::User(user_id))
             }
-
-            _ => Err(format!("Unknown/unsupported principal type: {:?}", claims.tty)),
+            TokenType::Service => Ok(Self::Service(claims.sub.clone())),
         }
     }
 }
