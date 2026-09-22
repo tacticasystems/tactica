@@ -24,6 +24,10 @@ PKG_CONFIG_PATH = "{{ exec(command='mise bootstrap packages where brew:libpq') }
 "cargo:typos-cli" = "1.50.2"
 rust = "1.98.1"
 
+[tasks.build]
+description = "Build all of the released components of the workspace"
+run = "cargo build --package tactica-api --release"
+
 [tasks.fmt]
 description = "Run rustfmt on the entire workspace"
 run = ["cargo fmt --all", "taplo fmt"]
@@ -75,4 +79,12 @@ docker build . \
   --build-arg RUST_VERSION=${RUST_VERSION} \
   --file Dockerfile \
   --tag "${TACTICA_IMAGE_PREFIX:-git.hayden.moe/tactica/tactica}/api:${TACTICA_IMAGE_TAG:-dev}" \
+"""
+
+[tasks.gen-jwt-keys]
+description = "Generate JWT keys for the API"
+run = """
+rm -rf "{{ config_root }}/.local/jwt.key" "{{ config_root }}/.local/jwt.pem"
+openssl genpkey -algorithm ed25519 -out "{{ config_root }}/.local/jwt.key"
+openssl pkey -in "{{ config_root }}/.local/jwt.key" -pubout -out "{{ config_root }}/.local/jwt.pem"
 """
