@@ -27,10 +27,14 @@ RUN apt-get update \
 
 COPY --from=builder --chown=10001:10001 /usr/local/bin/${BIN} /usr/local/bin/${BIN}
 
+RUN echo "#!/usr/bin/env bash" > /usr/local/bin/entrypoint && \
+  echo "exec /usr/bin/tini -- /usr/local/bin/${BIN} \"\${@}\"" >> /usr/local/bin/entrypoint && \
+  chmod +x /usr/local/bin/entrypoint
+
 LABEL org.opencontainers.image.source="https://git.hayden.moe/tactica/tactica"
 USER 10001:10001
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD ["curl", "--max-time", "2", "--fail", "--silent", "http://127.0.0.1:8080/healthz"]
 
-ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/${BIN}"]
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
