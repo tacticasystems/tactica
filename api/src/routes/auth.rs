@@ -127,6 +127,15 @@ async fn register(
     }))
 }
 
+/// Get the currently authenticated user's information.
+#[utoipa::path(
+    get,
+    path = "/api/v1/auth/me",
+    responses(
+        (status = 200, description = "User information retrieved successfully", body = v1::auth::MeResponse),
+        (status = 401, description = "Unauthorized"),
+    ),
+)]
 async fn me(Storage(stg): Storage, Principal(principal): Principal) -> Result<impl IntoResponse> {
     match principal {
         tactica_auth::principal::Principal::User(user_id) => {
