@@ -18,7 +18,7 @@ PKG_CONFIG_PATH = "{{ exec(command='mise bootstrap packages where brew:libpq') }
 [tools]
 "cargo:cargo-deny" = "0.20.2"
 "cargo:cargo-machete" = "0.9.2"
-"cargo:cargo-nextest" = "0.9.145"
+"cargo:cargo-nextest" = "0.9.146"
 "cargo:diesel_cli" = "2.3.13"
 "cargo:taplo-cli" = "0.10.0"
 "cargo:typos-cli" = "1.50.2"
