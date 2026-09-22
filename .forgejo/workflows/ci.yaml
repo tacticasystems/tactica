@@ -22,14 +22,14 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: https://data.forgejo.org/actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: https://data.forgejo.org/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: https://git.hayden.moe/tactica/setup-repo-action@0bf4688b9e719c1f61e45e7dc06f378c522e41c5
       - run: cargo fmt --all -- --check
 
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: https://data.forgejo.org/actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: https://data.forgejo.org/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: https://git.hayden.moe/tactica/setup-repo-action@0bf4688b9e719c1f61e45e7dc06f378c522e41c5
       - run: cargo build --workspace --all-features
       - run: cargo nextest run --workspace --all-features --no-fail-fast
@@ -37,14 +37,14 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: https://data.forgejo.org/actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: https://data.forgejo.org/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: https://git.hayden.moe/tactica/setup-repo-action@0bf4688b9e719c1f61e45e7dc06f378c522e41c5
       - run: cargo deny --all-features check
 
   doc:
     runs-on: ubuntu-latest
     steps:
-      - uses: https://data.forgejo.org/actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: https://data.forgejo.org/actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: https://git.hayden.moe/tactica/setup-repo-action@0bf4688b9e719c1f61e45e7dc06f378c522e41c5
       - run: cargo doc --workspace --all-features --no-deps
 
