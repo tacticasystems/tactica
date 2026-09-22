@@ -112,7 +112,7 @@ utoipa = "5.5"
 syn = "3.0"
 proc-macro2 = "1.0"
 quote = "1.0"
-serde_tokenstream = "0.2"
+serde_tokenstream = "0.3"
 diesel = { version = "2.3", features = ["chrono", "uuid"] }
 diesel_migrations = { version = "2.3" }
 diesel-async = { version = "0.9", features = ["postgres", "pool", "bb8"] }
