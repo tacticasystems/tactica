@@ -24,6 +24,12 @@ pub fn router(state: ApiState) -> Router {
 fn routes(state: ApiState) -> Router {
     let ordinary = Router::new()
         .merge(routes::auth::router().with_state(state.clone()))
+        .merge(routes::users::router().with_state(state.clone()))
+        .merge(routes::units::router().with_state(state.clone()))
+        .merge(routes::unit_settings::router().with_state(state.clone()))
+        .merge(routes::ranks::router().with_state(state.clone()))
+        .merge(routes::roles::router().with_state(state.clone()))
+        .merge(routes::members::router().with_state(state.clone()))
         .layer(RequestBodyLimitLayer::new(MAX_BODY_BYTES))
         .fallback(async || -> Response { Error::NotFound.into_response() })
         .with_state(state);
