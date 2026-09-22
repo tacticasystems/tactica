@@ -1,8 +1,8 @@
+use anyhow::anyhow;
 use axum::routing::get;
 use axum::{Json, Router, response::IntoResponse, routing::post};
 use tactica_api_types::v1;
 use tactica_db_model::UserStore;
-use anyhow::anyhow;
 
 use crate::error::{Error, Result};
 use crate::state::{ApiState, AuthCtx, Principal, Storage};
@@ -45,10 +45,13 @@ async fn login(
     }
     let password_hash = user.password_hash.unwrap();
 
-    println!("{}", auth_ctx.hash_password(&body.password).await.map_err(|e| {
-        println!("Failed to hash password: {}", e);
-        Error::Other(anyhow!("failed to hash password: {}", e))
-    })?);
+    println!(
+        "{}",
+        auth_ctx.hash_password(&body.password).await.map_err(|e| {
+            println!("Failed to hash password: {}", e);
+            Error::Other(anyhow!("failed to hash password: {}", e))
+        })?
+    );
     if !auth_ctx
         .hash_password(&body.password)
         .await
@@ -64,11 +67,10 @@ async fn login(
         ));
     }
 
-    let token = auth_ctx.jwt().generate_jwt_for_user(user.id)
-        .map_err(|e| {
-            println!("Failed to generate JWT: {}", e);
-            Error::Other(anyhow!("failed to generate JWT: {}", e))
-        })?;
+    let token = auth_ctx.jwt().generate_jwt_for_user(user.id).map_err(|e| {
+        println!("Failed to generate JWT: {}", e);
+        Error::Other(anyhow!("failed to generate JWT: {}", e))
+    })?;
 
     Ok(Json(v1::auth::LoginResponse {
         token_type: "Bearer".to_string(),
@@ -82,10 +84,7 @@ async fn register() -> &'static str {
     "register"
 }
 
-async fn me(
-    Storage(stg): Storage,
-    Principal(principal): Principal,
-) -> Result<impl IntoResponse> {
+async fn me(Storage(stg): Storage, Principal(principal): Principal) -> Result<impl IntoResponse> {
     match principal {
         tactica_auth::principal::Principal::User(user_id) => {
             println!("Authenticated user ID: {}", user_id);
@@ -108,9 +107,9 @@ async fn me(
             } else {
                 Err(Error::Unauthorized("User not found".to_string()))
             }
-        },
+        }
 
         #[allow(unused)]
-        _ => Err(Error::Unauthorized("Invalid principal type".to_string()))
+        _ => Err(Error::Unauthorized("Invalid principal type".to_string())),
     }
 }

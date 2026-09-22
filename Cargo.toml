@@ -11,7 +11,8 @@ members = [
   "db/model",
 
   # utility crates
-  "uuid-kinds", "auth",
+  "uuid-kinds",
+  "auth",
 ]
 
 [workspace.package]
@@ -50,7 +51,11 @@ jsonwebtoken = { version = "11.1", features = ["rust_crypto"] }
 argon2 = { version = "0.6", features = ["rand_core"] }
 
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+tracing-subscriber = { version = "0.3", features = [
+  "env-filter",
+  "fmt",
+  "json",
+] }
 
 tactica-api-types = { path = "api/types" }
 tactica-auth = { path = "auth" }

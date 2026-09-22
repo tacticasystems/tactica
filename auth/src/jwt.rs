@@ -25,7 +25,6 @@ pub struct JwtContext {
     max_token_lifetime: Duration,
 }
 
-
 #[derive(Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
@@ -35,10 +34,7 @@ pub struct Claims {
 }
 
 impl JwtContext {
-    pub fn new(
-        pubkey: &[u8],
-        privkey: &[u8],
-    ) -> Result<Self, JwtError> {
+    pub fn new(pubkey: &[u8], privkey: &[u8]) -> Result<Self, JwtError> {
         let encoding_key = EncodingKey::from_ed_pem(privkey).map_err(JwtError::KeyDecode)?;
         let decoding_key = DecodingKey::from_ed_pem(pubkey).map_err(JwtError::KeyDecode)?;
         Ok(Self {
@@ -49,10 +45,7 @@ impl JwtContext {
         })
     }
 
-    pub fn from_files(
-        pubkey_path: &PathBuf,
-        privkey_path: &PathBuf,
-    ) -> Result<Self, JwtError> {
+    pub fn from_files(pubkey_path: &PathBuf, privkey_path: &PathBuf) -> Result<Self, JwtError> {
         let pubkey = std::fs::read(pubkey_path).map_err(JwtError::KeyRead)?;
         let privkey = std::fs::read(privkey_path).map_err(JwtError::KeyRead)?;
         Self::new(&pubkey, &privkey)
@@ -80,8 +73,7 @@ impl JwtContext {
         let mut header = Header::default();
         header.alg = jsonwebtoken::Algorithm::EdDSA;
 
-        encode(&header, &claims, &self.encoding_key)
-            .map_err(JwtError::Encode)
+        encode(&header, &claims, &self.encoding_key).map_err(JwtError::Encode)
     }
 
     pub fn validate_jwt(&self, token: &str) -> Result<Claims, JwtError> {

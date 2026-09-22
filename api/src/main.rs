@@ -25,14 +25,14 @@ async fn main() {
         tracing::info!("running migrations...");
 
         let mut harness = AsyncMigrationHarness::new(
-            conn
-                .pool()
+            conn.pool()
                 .get_owned()
                 .await
-                .expect("Failed to get connection from pool")
+                .expect("Failed to get connection from pool"),
         );
 
-        harness.run_pending_migrations(MIGRATIONS)
+        harness
+            .run_pending_migrations(MIGRATIONS)
             .expect("Failed to run migrations");
 
         tracing::info!("migrations completed successfully");
@@ -50,19 +50,16 @@ async fn main() {
         .parse()
         .expect("Failed to parse TACTICA_JWT_KEY_PRIV_PATH");
 
-    let jwt_context = tactica_auth::jwt::JwtContext::from_files(
-        &jwt_key_pub_path,
-        &jwt_key_priv_path,
-    )
-        .expect("Failed to create JWT context");
+    let jwt_context =
+        tactica_auth::jwt::JwtContext::from_files(&jwt_key_pub_path, &jwt_key_priv_path)
+            .expect("Failed to create JWT context");
 
     let auth_context = tactica_auth::AuthContext::new(
         Arc::new(conn.clone()),
         jwt_context,
-        std::env::var("TACTICA_AUTH_SALT")
-            .expect("TACTICA_AUTH_SALT must be set")
+        std::env::var("TACTICA_AUTH_SALT").expect("TACTICA_AUTH_SALT must be set"),
     )
-        .expect("Failed to create AuthContext");
+    .expect("Failed to create AuthContext");
 
     let listen_addr: SocketAddr = std::env::var("TACTICA_LISTEN_ADDR")
         .unwrap_or_else(|_| "0.0.0.0:8080".to_string())

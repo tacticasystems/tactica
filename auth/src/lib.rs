@@ -1,20 +1,18 @@
-use std::sync::Arc;
-use tokio::sync::OnceCell;
 use argon2::{Argon2, PasswordHasher, password_hash::phc::SaltString};
+use std::sync::Arc;
 use tactica_db_model::TacticaStorage;
+use tokio::sync::OnceCell;
 
 use crate::jwt::JwtContext;
 
 pub mod jwt;
-pub mod utils;
 pub mod principal;
+pub mod utils;
 
 pub(crate) const ARGON2: OnceCell<Argon2> = OnceCell::const_new();
 
 pub(crate) async fn get_argon2() -> Argon2<'static> {
-    ARGON2.get_or_init(async || {Argon2::default()})
-        .await
-        .clone()
+    ARGON2.get_or_init(async || Argon2::default()).await.clone()
 }
 
 #[derive(Clone)]
@@ -47,9 +45,13 @@ impl AuthContext {
         self.jwt.clone()
     }
 
-    pub async fn hash_password(&self, password: &str) -> Result<String, argon2::password_hash::Error> {
+    pub async fn hash_password(
+        &self,
+        password: &str,
+    ) -> Result<String, argon2::password_hash::Error> {
         let argon2 = get_argon2().await;
-        let password_hash = argon2.hash_password_with_salt(password.as_bytes(), &self.salt.as_bytes())?;
+        let password_hash =
+            argon2.hash_password_with_salt(password.as_bytes(), &self.salt.as_bytes())?;
         Ok(password_hash.to_string())
     }
 }

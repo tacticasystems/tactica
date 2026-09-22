@@ -13,10 +13,7 @@ pub struct ApiState {
 }
 
 impl ApiState {
-    pub fn new(
-        storage: Arc<dyn TacticaStorage>,
-        auth: Arc<AuthContext>,
-    ) -> Self {
+    pub fn new(storage: Arc<dyn TacticaStorage>, auth: Arc<AuthContext>) -> Self {
         Self { storage, auth }
     }
 
@@ -67,7 +64,9 @@ impl FromRequestParts<ApiState> for Principal {
         parts: &mut axum::http::request::Parts,
         state: &ApiState,
     ) -> Result<Self, Self::Rejection> {
-        let bearer_token = parts.headers.get("Authorization")
+        let bearer_token = parts
+            .headers
+            .get("Authorization")
             .and_then(|header| header.to_str().ok())
             .and_then(|header| {
                 let parts = header.split_once(' ');
@@ -86,15 +85,16 @@ impl FromRequestParts<ApiState> for Principal {
 
         if bearer_token.is_none() {
             println!("No bearer token found in request");
-            return Err(Error::Unauthorized("No bearer token found in request".to_string()));
+            return Err(Error::Unauthorized(
+                "No bearer token found in request".to_string(),
+            ));
         }
         let bearer_token = bearer_token.unwrap();
 
-        let claims = state.auth.jwt().validate_jwt(&bearer_token)
-            .map_err(|e| {
-                println!("Failed to validate JWT: {}", e);
-                Error::Unauthorized("Invalid or expired token".to_string())
-            })?;
+        let claims = state.auth.jwt().validate_jwt(&bearer_token).map_err(|e| {
+            println!("Failed to validate JWT: {}", e);
+            Error::Unauthorized("Invalid or expired token".to_string())
+        })?;
 
         Ok(Principal(
             tactica_auth::principal::Principal::from_jwt_claims(&claims)
