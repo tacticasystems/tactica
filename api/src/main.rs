@@ -13,10 +13,10 @@ struct Args {
     #[clap(long, short, env = "TACTICA_RUN_MIGRATIONS", default_value = "false")]
     run_migrations: bool,
 
-    #[clap(long, short, env = "TACTICA_JWT_KEY_PUB_PATH")]
+    #[clap(long, env = "TACTICA_JWT_KEY_PUB_PATH")]
     jwt_key_pub_path: PathBuf,
 
-    #[clap(long, short, env = "TACTICA_JWT_KEY_PRIV_PATH")]
+    #[clap(long, env = "TACTICA_JWT_KEY_PRIV_PATH")]
     jwt_key_priv_path: PathBuf,
 
     #[clap(long, short, env = "TACTICA_AUTH_SALT")]
