@@ -42,3 +42,10 @@ pub(super) fn validate_pagination(pagination: &ListPagination) -> Result<()> {
     }
     Ok(())
 }
+
+pub(super) fn require_user(principal: Principal) -> Result<tactica_uuid_kinds::UserId> {
+    match principal {
+        Principal::User(user_id) => Ok(user_id),
+        Principal::Service(_) => Err(Error::Forbidden("A user principal is required".to_owned())),
+    }
+}

@@ -6,6 +6,7 @@ mod unit_member_role;
 mod unit_membership;
 mod unit_rank;
 mod unit_role;
+mod unit_role_management;
 mod unit_settings;
 mod user;
 
@@ -18,6 +19,7 @@ pub use unit_member_role::*;
 pub use unit_membership::*;
 pub use unit_rank::*;
 pub use unit_role::*;
+pub use unit_role_management::*;
 pub use unit_settings::*;
 pub use user::*;
 
@@ -30,6 +32,7 @@ pub trait TacticaStorage:
     + UnitMemberRoleStore
     + UnitRankStore
     + UnitRoleStore
+    + UnitRoleManagementStore
     + UnitSettingsStore
     + Send
     + Sync
@@ -45,6 +48,7 @@ impl<T> TacticaStorage for T where
         + UnitMemberRoleStore
         + UnitRankStore
         + UnitRoleStore
+        + UnitRoleManagementStore
         + UnitSettingsStore
         + Send
         + Sync

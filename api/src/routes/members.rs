@@ -4,10 +4,7 @@ use axum::{
     routing::get,
 };
 use tactica_api_types::v1::members::{ListMemberRolesResponse, ListMembersResponse, MemberSummary};
-use tactica_db_model::{
-    ListPagination, UnitMemberRoleFilter, UnitMemberRoleStore, UnitMembershipFilter,
-    UnitMembershipStore,
-};
+use tactica_db_model::{ListPagination, UnitMembershipFilter, UnitMembershipStore, UnitRoleStore};
 use tactica_uuid_kinds::{MemberId, UnitId};
 
 use super::common::{require_unit_member, validate_pagination};
@@ -76,7 +73,7 @@ async fn list_members(
         ("limit" = Option<i64>, Query, description = "Page size from 1 to 100; defaults to 10"),
     ),
     responses(
-        (status = 200, description = "Assigned role IDs", body = ListMemberRolesResponse),
+        (status = 200, description = "Assigned role IDs including Everyone", body = ListMemberRolesResponse),
         (status = 400, description = "Invalid pagination"),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Unit membership required"),
@@ -95,18 +92,10 @@ async fn list_member_roles(
         .await?
         .filter(|member| member.unit_id == unit_id)
         .ok_or(Error::NotFound)?;
-    let assignments = UnitMemberRoleStore::list(
-        storage.as_ref(),
-        UnitMemberRoleFilter::default()
-            .unit_id(vec![unit_id])
-            .member_id(vec![member_id]),
-        &pagination,
-    )
-    .await?;
+    let roles =
+        UnitRoleStore::list_for_member(storage.as_ref(), unit_id, member_id, &pagination).await?;
+
     Ok(Json(ListMemberRolesResponse {
-        role_ids: assignments
-            .into_iter()
-            .map(|assignment| assignment.role_id)
-            .collect(),
+        role_ids: roles.into_iter().map(|role| role.id).collect(),
     }))
 }

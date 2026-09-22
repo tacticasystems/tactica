@@ -67,7 +67,7 @@ impl IntoResponse for Error {
                     "An internal server error occurred.".to_string(),
                     "internal_server_error".to_string(),
                 )
-            },
+            }
 
             _ => (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
@@ -83,5 +83,30 @@ impl IntoResponse for Error {
         };
 
         (status_code, axum::Json(error)).into_response()
+    }
+}
+
+impl From<tactica_db_model::RoleWriteError> for Error {
+    fn from(error: tactica_db_model::RoleWriteError) -> Self {
+        use tactica_db_model::RoleWriteError;
+        match error {
+            RoleWriteError::Unauthorized => {
+                Self::Unauthorized("User is missing or inactive".to_owned())
+            }
+            RoleWriteError::Forbidden => {
+                Self::Forbidden("Insufficient permissions or role hierarchy".to_owned())
+            }
+            RoleWriteError::NotFound => Self::NotFound,
+            RoleWriteError::ProtectedRole => {
+                Self::Forbidden("This operation is not allowed on a built-in role".to_owned())
+            }
+            RoleWriteError::InvalidPermissions => {
+                Self::Validation("Permissions contain undefined bits".to_owned())
+            }
+            RoleWriteError::InvalidOrder => {
+                Self::Validation("Role order must contain every unit role exactly once".to_owned())
+            }
+            RoleWriteError::Store(error) => Self::Store(error),
+        }
     }
 }

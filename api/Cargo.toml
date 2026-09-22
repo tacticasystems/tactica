@@ -29,6 +29,7 @@ tactica-db-schema = { workspace = true, features = ["migrations"] }
 tactica-db-model.workspace = true
 tactica-db.workspace = true
 tactica-uuid-kinds.workspace = true
+tactica-permissions.workspace = true
 
 [dev-dependencies]
 serde_json = "1.0"

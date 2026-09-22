@@ -52,6 +52,9 @@ impl UnitMemberRoleFilter {
 #[async_trait]
 #[cfg_attr(feature = "mock", automock)]
 pub trait UnitMemberRoleStore {
+    /// Assigns a role idempotently, preserving an existing assignment.
+    async fn assign(&self, assignment: NewUnitMemberRole) -> Result<(), StoreError>;
+
     /// Lists assignments, optionally filtered by member, role, or unit.
     async fn list(
         &self,

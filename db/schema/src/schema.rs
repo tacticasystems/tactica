@@ -61,6 +61,7 @@ table! {
         icon_url -> Nullable<Text>,
         banner_url -> Nullable<Text>,
         biography -> Nullable<Text>,
+        owner_id -> Uuid,
 
         // audit
         created_at -> Timestamptz,
@@ -113,6 +114,8 @@ table! {
         description -> Nullable<Text>,
 
         permissions -> BigInt,
+        position -> BigInt,
+        kind -> Text,
 
         // audit
         created_at -> Timestamptz,

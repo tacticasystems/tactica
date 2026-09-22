@@ -3,10 +3,10 @@ use diesel::{ExpressionMethods, QueryDsl, delete, dsl::insert_into, update};
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use tactica_db_model::{
     CreateUnit, CreatedUnit, ListPagination, NewUnit, StoreError, Unit, UnitFilter, UnitRank,
-    UnitStore,
+    UnitStore, role_kind,
 };
-use tactica_db_schema::schema::{unit_memberships, unit_ranks, unit_settings, units};
-use tactica_uuid_kinds::{MemberId, RankId, UnitId};
+use tactica_db_schema::schema::{unit_memberships, unit_ranks, unit_roles, unit_settings, units};
+use tactica_uuid_kinds::{MemberId, RankId, RoleId, UnitId, UserId};
 
 use crate::PgConnection;
 
@@ -23,9 +23,12 @@ impl UnitStore for PgConnection {
                     units::icon_url.eq(input.unit.icon_url),
                     units::banner_url.eq(input.unit.banner_url),
                     units::biography.eq(input.unit.biography),
+                    units::owner_id.eq(input.owner_id.as_uuid()),
                 ))
                 .get_result::<Unit>(conn)
                 .await?;
+
+            create_builtin_roles(conn, unit.id).await?;
 
             let owner_rank_id = RankId::new();
             let owner_rank = insert_into(unit_ranks::table)
@@ -125,19 +128,26 @@ impl UnitStore for PgConnection {
         .next())
     }
 
-    async fn create(&self, unit: NewUnit) -> Result<Unit, StoreError> {
-        insert_into(units::table)
-            .values((
-                units::id.eq(unit.id.as_uuid()),
-                units::slug.eq(unit.slug),
-                units::display_name.eq(unit.display_name),
-                units::icon_url.eq(unit.icon_url),
-                units::banner_url.eq(unit.banner_url),
-                units::biography.eq(unit.biography),
-            ))
-            .get_result(&mut self.conn().await?)
+    async fn create(&self, owner_id: UserId, unit: NewUnit) -> Result<Unit, StoreError> {
+        self.conn()
+            .await?
+            .transaction::<_, StoreError, _>(async move |conn| {
+                let unit = insert_into(units::table)
+                    .values((
+                        units::id.eq(unit.id.as_uuid()),
+                        units::slug.eq(unit.slug),
+                        units::display_name.eq(unit.display_name),
+                        units::icon_url.eq(unit.icon_url),
+                        units::banner_url.eq(unit.banner_url),
+                        units::biography.eq(unit.biography),
+                        units::owner_id.eq(owner_id.as_uuid()),
+                    ))
+                    .get_result::<Unit>(conn)
+                    .await?;
+                create_builtin_roles(conn, unit.id).await?;
+                Ok(unit)
+            })
             .await
-            .map_err(Into::into)
     }
 
     async fn update(&self, unit: Unit) -> Result<Unit, StoreError> {
@@ -160,4 +170,32 @@ impl UnitStore for PgConnection {
             .await?;
         Ok(())
     }
+}
+
+async fn create_builtin_roles(
+    conn: &mut diesel_async::AsyncPgConnection,
+    unit_id: UnitId,
+) -> Result<(), StoreError> {
+    for (kind, name, permissions, position) in [
+        (role_kind::EVERYONE, "Everyone", 0_i64, 0_i64),
+        (
+            role_kind::ADMINISTRATOR,
+            "Administrator",
+            tactica_permissions::Permission::Administrator.bits(),
+            1_i64,
+        ),
+    ] {
+        insert_into(unit_roles::table)
+            .values((
+                unit_roles::id.eq(RoleId::new().as_uuid()),
+                unit_roles::unit_id.eq(unit_id.as_uuid()),
+                unit_roles::display_name.eq(name),
+                unit_roles::permissions.eq(permissions),
+                unit_roles::position.eq(position),
+                unit_roles::kind.eq(kind),
+            ))
+            .execute(conn)
+            .await?;
+    }
+    Ok(())
 }

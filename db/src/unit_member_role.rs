@@ -12,6 +12,20 @@ use crate::PgConnection;
 
 #[async_trait]
 impl UnitMemberRoleStore for PgConnection {
+    async fn assign(&self, assignment: NewUnitMemberRole) -> Result<(), StoreError> {
+        insert_into(unit_member_roles::table)
+            .values((
+                unit_member_roles::member_id.eq(assignment.member_id.as_uuid()),
+                unit_member_roles::role_id.eq(assignment.role_id.as_uuid()),
+                unit_member_roles::unit_id.eq(assignment.unit_id.as_uuid()),
+            ))
+            .on_conflict((unit_member_roles::member_id, unit_member_roles::role_id))
+            .do_nothing()
+            .execute(&mut self.conn().await?)
+            .await?;
+        Ok(())
+    }
+
     async fn list(
         &self,
         filter: UnitMemberRoleFilter,

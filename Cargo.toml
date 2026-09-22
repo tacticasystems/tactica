@@ -13,6 +13,7 @@ members = [
   # utility crates
   "uuid-kinds",
   "auth",
+  "permissions",
 ]
 
 [workspace.package]
@@ -133,6 +134,7 @@ tracing-subscriber = { version = "0.3", features = [
 
 tactica-api-types = { path = "api/types" }
 tactica-auth = { path = "auth" }
+tactica-permissions = { path = "permissions" }
 tactica-db = { path = "db" }
 tactica-db-schema = { path = "db/schema" }
 tactica-db-model = { path = "db/model" }

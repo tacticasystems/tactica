@@ -92,7 +92,7 @@ async fn public_units_include_total_member_counts_even_when_paginated() {
     let owner = user(&api, "owner").await;
     let populated = unit(&api, owner, "populated").await;
     let other = unit(&api, owner, "other").await;
-    let empty = UnitStore::create(&api.storage, new_unit("empty"))
+    let empty = UnitStore::create(&api.storage, owner, new_unit("empty"))
         .await
         .expect("empty unit");
     let additional_member = UnitMembershipStore::create(
@@ -199,17 +199,35 @@ async fn unit_members_can_read_only_the_requested_units_roster_data() {
     let (status, body) = api.get(&format!("{base}/roles"), Some(&token)).await;
     assert_eq!(status, StatusCode::OK);
     let roles: ListRolesResponse = serde_json::from_value(body).expect("roles");
-    assert_eq!(roles.roles.len(), 2);
+    assert_eq!(roles.roles.len(), 4);
     assert!(roles.roles.iter().all(|role| role.unit_id == first.unit.id));
-    assert_eq!(roles.roles.first().expect("first role").id, first_role);
+    assert_eq!(
+        roles.roles.first().expect("highest role").kind,
+        "administrator"
+    );
+    assert_eq!(
+        roles
+            .roles
+            .iter()
+            .find(|role| role.kind == "custom")
+            .expect("first custom role")
+            .id,
+        first_role
+    );
+    let everyone_id = roles
+        .roles
+        .iter()
+        .find(|role| role.kind == "everyone")
+        .expect("Everyone role")
+        .id;
 
     let assignments = format!("{base}/members/{}/roles", first.owner_membership_id);
     let (status, body) = api.get(&assignments, Some(&token)).await;
     assert_eq!(status, StatusCode::OK);
     let roles: ListMemberRolesResponse = serde_json::from_value(body).expect("assignments");
-    assert_eq!(roles.role_ids, vec![first_role, second_role]);
+    assert_eq!(roles.role_ids, vec![everyone_id, first_role, second_role]);
     let (status, body) = api
-        .get(&format!("{assignments}?offset=1&limit=1"), Some(&token))
+        .get(&format!("{assignments}?offset=2&limit=1"), Some(&token))
         .await;
     assert_eq!(status, StatusCode::OK);
     let roles: ListMemberRolesResponse = serde_json::from_value(body).expect("assignment page");
@@ -278,7 +296,7 @@ async fn unit_members_can_read_only_the_requested_units_roster_data() {
         .expect("remove second role");
     let (_, body) = api.get(&assignments, Some(&token)).await;
     let roles: ListMemberRolesResponse = serde_json::from_value(body).expect("no assignments");
-    assert!(roles.role_ids.is_empty());
+    assert_eq!(roles.role_ids, vec![everyone_id]);
 }
 
 #[tokio::test(flavor = "multi_thread")]

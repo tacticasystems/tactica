@@ -13,6 +13,7 @@ utoipa = ["dep:utoipa", "utoipa/chrono", "tactica-uuid-kinds/utoipa"]
 
 [dependencies]
 tactica-uuid-kinds = { workspace = true, features = ["serde"] }
+tactica-permissions.workspace = true
 chrono.workspace = true
 serde.workspace = true
 utoipa = { workspace = true, optional = true }

@@ -2991,6 +2991,7 @@ dependencies = [
  "tactica-db",
  "tactica-db-model",
  "tactica-db-schema",
+ "tactica-permissions",
  "tactica-uuid-kinds",
  "testcontainers-modules",
  "thiserror",
@@ -3008,6 +3009,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "serde",
+ "tactica-permissions",
  "tactica-uuid-kinds",
  "utoipa",
 ]
@@ -3039,6 +3041,7 @@ dependencies = [
  "diesel-async",
  "tactica-db-model",
  "tactica-db-schema",
+ "tactica-permissions",
  "tactica-uuid-kinds",
  "testcontainers-modules",
  "tokio",
@@ -3068,6 +3071,10 @@ dependencies = [
  "diesel-async",
  "diesel_migrations",
 ]
+
+[[package]]
+name = "tactica-permissions"
+version = "0.1.0"
 
 [[package]]
 name = "tactica-uuid-kinds"

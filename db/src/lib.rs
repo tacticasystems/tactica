@@ -15,6 +15,7 @@ mod unit_member_role;
 mod unit_membership;
 mod unit_rank;
 mod unit_role;
+mod unit_role_management;
 mod unit_settings;
 mod user;
 

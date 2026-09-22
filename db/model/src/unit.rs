@@ -24,6 +24,9 @@ pub struct Unit {
     pub biography: Option<String>,
 
     #[partial(NewUnit(skip))]
+    pub owner_id: UserId,
+
+    #[partial(NewUnit(skip))]
     pub created_at: DateTime<Utc>,
     #[partial(NewUnit(skip))]
     pub updated_at: DateTime<Utc>,
@@ -83,10 +86,10 @@ pub trait UnitStore {
     /// Gets a unit by its slug.
     async fn get_by_slug(&self, slug: &str) -> Result<Option<Unit>, StoreError>;
 
-    /// Creates a new unit in the database.
-    async fn create(&self, unit: NewUnit) -> Result<Unit, StoreError>;
+    /// Creates a new unit with the given owner, without default ranks or membership.
+    async fn create(&self, owner_id: UserId, unit: NewUnit) -> Result<Unit, StoreError>;
 
-    /// Updates an existing unit using its ID.
+    /// Updates an existing unit using its ID, preserving its owner.
     async fn update(&self, unit: Unit) -> Result<Unit, StoreError>;
 
     /// Deletes a unit by its ID.
