@@ -5,13 +5,15 @@ no-default-features = false
 [advisories]
 version = 2
 yanked = "deny"
-ignore = []
+ignore = [
+  "RUSTSEC-2023-0071"
+]
 
 [licenses]
 version = 2
 confidence-threshold = 0.9
 private = { ignore = true }
-allow = ["MIT", "Apache-2.0", "Unicode-3.0", "MPL-2.0", "BSD-3-Clause"]
+allow = ["MIT", "Apache-2.0", "Unicode-3.0", "MPL-2.0", "BSD-3-Clause", "ISC"]
 exceptions = []
 
 [bans]
@@ -26,6 +28,16 @@ allow = []
 # webauthn-rs-core requires it unconditionally.
 deny = [{ crate = "openssl-sys" }, { crate = "native-tls" }]
 skip = [
+  { crate = "block-buffer@0.10.4" },
+  { crate = "const-oid@0.9.6" },
+  { crate = "cpufeatures@0.2.17" },
+  { crate = "crypto-common@0.1.6" },
+  { crate = "digest@0.10.7" },
+  { crate = "getrandom@0.2.17" },
+  { crate = "hmac@0.12.1" },
+  { crate = "rand@0.8.8" },
+  { crate = "rand_core@0.6.4" },
+  { crate = "sha2@0.10.9" },
   { crate = "winnow@0.7.15" },
   { crate = "wasi@0.11.1" },
   { crate = "syn@2.0.119" },
