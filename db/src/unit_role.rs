@@ -35,6 +35,7 @@ impl UnitRoleStore for PgConnection {
         }
 
         Ok(query
+            .order(unit_roles::id)
             .offset(pagination.offset.0)
             .limit(pagination.limit.0)
             .get_results(&mut self.conn().await?)

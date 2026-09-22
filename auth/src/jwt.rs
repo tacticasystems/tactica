@@ -1,9 +1,11 @@
-use std::{path::PathBuf, time::Duration};
+use std::path::PathBuf;
 
 use chrono::Utc;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, encode};
 use serde::{Deserialize, Serialize};
 use tactica_uuid_kinds::UserId;
+
+pub const ACCESS_TOKEN_LIFETIME_SECONDS: i64 = 300;
 
 #[derive(Debug, thiserror::Error)]
 pub enum JwtError {
@@ -21,8 +23,6 @@ pub enum JwtError {
 pub struct JwtContext {
     encoding_key: EncodingKey,
     decoding_key: DecodingKey,
-
-    max_token_lifetime: Duration,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -47,8 +47,6 @@ impl JwtContext {
         Ok(Self {
             encoding_key,
             decoding_key,
-
-            max_token_lifetime: Duration::from_mins(5),
         })
     }
 
@@ -70,7 +68,7 @@ impl JwtContext {
 
     pub fn generate_jwt_for_user(&self, user_id: UserId) -> Result<String, JwtError> {
         let now = Utc::now();
-        let exp = now + self.max_token_lifetime;
+        let exp = now + chrono::Duration::seconds(ACCESS_TOKEN_LIFETIME_SECONDS);
 
         let claims = Claims {
             sub: user_id.to_string(),

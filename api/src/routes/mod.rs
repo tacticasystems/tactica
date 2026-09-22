@@ -1,4 +1,5 @@
 pub mod auth;
+mod common;
 pub mod health;
 pub mod members;
 pub mod ranks;

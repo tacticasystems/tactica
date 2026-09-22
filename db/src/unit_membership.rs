@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use async_trait::async_trait;
 use diesel::{ExpressionMethods, QueryDsl, delete, dsl::insert_into, update};
 use diesel_async::RunQueryDsl;
@@ -12,6 +14,22 @@ use crate::PgConnection;
 
 #[async_trait]
 impl UnitMembershipStore for PgConnection {
+    async fn count_by_unit(
+        &self,
+        unit_ids: Vec<UnitId>,
+    ) -> Result<HashMap<UnitId, i64>, StoreError> {
+        if unit_ids.is_empty() {
+            return Ok(HashMap::new());
+        }
+        let counts = unit_memberships::table
+            .filter(unit_memberships::unit_id.eq_any(unit_ids.into_iter().map(|id| *id.as_uuid())))
+            .group_by(unit_memberships::unit_id)
+            .select((unit_memberships::unit_id, diesel::dsl::count_star()))
+            .load::<(UnitId, i64)>(&mut self.conn().await?)
+            .await?;
+        Ok(counts.into_iter().collect())
+    }
+
     async fn list(
         &self,
         filter: UnitMembershipFilter,
@@ -46,6 +64,7 @@ impl UnitMembershipStore for PgConnection {
         }
 
         Ok(query
+            .order(unit_memberships::id)
             .offset(pagination.offset.0)
             .limit(pagination.limit.0)
             .get_results(&mut self.conn().await?)

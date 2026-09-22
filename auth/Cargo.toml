@@ -16,6 +16,9 @@ serde.workspace = true
 chrono.workspace = true
 argon2.workspace = true
 tokio.workspace = true
+getrandom = "0.4"
+sha2 = "0.11"
+hex = "0.4"
 
 [lints]
 workspace = true

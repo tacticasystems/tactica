@@ -96,6 +96,7 @@ impl UnitStore for PgConnection {
         }
 
         Ok(query
+            .order(units::id)
             .offset(pagination.offset.0)
             .limit(pagination.limit.0)
             .get_results(&mut self.conn().await?)

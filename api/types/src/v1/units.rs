@@ -34,6 +34,7 @@ pub struct UnitSummary {
     pub icon_url: Option<String>,
     pub banner_url: Option<String>,
     pub biography: Option<String>,
+    pub member_count: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -18,6 +18,18 @@ pub struct LoginResponse {
     pub expires_in: i64,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
+pub struct RefreshRequest {
+    pub refresh_token: String,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
+pub struct LogoutRequest {
+    pub refresh_token: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 pub struct RegisterRequest {

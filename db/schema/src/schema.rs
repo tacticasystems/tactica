@@ -3,6 +3,25 @@
 use diesel::table;
 
 table! {
+    refresh_sessions (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        expires_at -> Timestamptz,
+        revoked_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+    }
+}
+
+table! {
+    refresh_tokens (token_hash) {
+        token_hash -> Text,
+        session_id -> Uuid,
+        consumed_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+    }
+}
+
+table! {
     users (id) {
         id -> Uuid,
 
@@ -98,6 +117,15 @@ table! {
         // audit
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
+    }
+}
+
+table! {
+    unit_member_roles (member_id, role_id) {
+        member_id -> Uuid,
+        role_id -> Uuid,
+        unit_id -> Uuid,
+        created_at -> Timestamptz,
     }
 }
 

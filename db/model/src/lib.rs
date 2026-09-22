@@ -1,6 +1,8 @@
 //! Database models and storage traits for Tactica.
 
+mod refresh_session;
 mod unit;
+mod unit_member_role;
 mod unit_membership;
 mod unit_rank;
 mod unit_role;
@@ -8,9 +10,11 @@ mod unit_settings;
 mod user;
 
 use diesel_async::pooled_connection::{PoolError, bb8::RunError};
+pub use refresh_session::*;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 pub use unit::*;
+pub use unit_member_role::*;
 pub use unit_membership::*;
 pub use unit_rank::*;
 pub use unit_role::*;
@@ -20,8 +24,10 @@ pub use user::*;
 /// A trait that combines all the storage traits into one for convenience.
 pub trait TacticaStorage:
     UserStore
+    + RefreshSessionStore
     + UnitStore
     + UnitMembershipStore
+    + UnitMemberRoleStore
     + UnitRankStore
     + UnitRoleStore
     + UnitSettingsStore
@@ -33,8 +39,10 @@ pub trait TacticaStorage:
 
 impl<T> TacticaStorage for T where
     T: UserStore
+        + RefreshSessionStore
         + UnitStore
         + UnitMembershipStore
+        + UnitMemberRoleStore
         + UnitRankStore
         + UnitRoleStore
         + UnitSettingsStore

@@ -31,6 +31,7 @@ impl UnitRankStore for PgConnection {
         }
 
         Ok(query
+            .order(unit_ranks::id)
             .offset(pagination.offset.0)
             .limit(pagination.limit.0)
             .get_results(&mut self.conn().await?)

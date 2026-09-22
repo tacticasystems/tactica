@@ -11,6 +11,7 @@ publish.workspace = true
 async-trait.workspace = true
 diesel.workspace = true
 diesel-async.workspace = true
+chrono.workspace = true
 
 tactica-uuid-kinds.workspace = true
 tactica-db-schema.workspace = true

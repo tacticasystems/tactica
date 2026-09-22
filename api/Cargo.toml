@@ -30,5 +30,10 @@ tactica-db-model.workspace = true
 tactica-db.workspace = true
 tactica-uuid-kinds.workspace = true
 
+[dev-dependencies]
+serde_json = "1.0"
+testcontainers-modules = { version = "0.15", features = ["postgres"] }
+tower = { version = "0.5", features = ["util"] }
+
 [lints]
 workspace = true

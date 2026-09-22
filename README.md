@@ -2,6 +2,9 @@
 
 The milsim unit management platform.
 
+See [the unit API map](docs/api.md) for implemented read endpoints, access rules,
+and the next endpoint batches.
+
 ## Build
 
 ```

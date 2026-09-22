@@ -9,6 +9,7 @@ use diesel::{
 use uuid::Uuid;
 
 impl_typed_uuid_kinds!(UserId);
+impl_typed_uuid_kinds!(SessionId);
 impl_typed_uuid_kinds!(UnitId);
 impl_typed_uuid_kinds!(RankId);
 impl_typed_uuid_kinds!(RoleId);

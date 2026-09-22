@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use diesel::prelude::{Insertable, Queryable, Selectable};
@@ -63,6 +65,12 @@ impl UnitMembershipFilter {
 #[async_trait]
 #[cfg_attr(feature = "mock", automock)]
 pub trait UnitMembershipStore {
+    /// Counts memberships for each requested unit. Units without members are omitted.
+    async fn count_by_unit(
+        &self,
+        unit_ids: Vec<UnitId>,
+    ) -> Result<HashMap<UnitId, i64>, StoreError>;
+
     /// Lists unit memberships in the database, filtered and paginated by the given arguments.
     async fn list(
         &self,

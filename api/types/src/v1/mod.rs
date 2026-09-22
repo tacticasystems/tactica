@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 pub mod auth;
+pub mod members;
+pub mod ranks;
+pub mod roles;
 pub mod units;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
