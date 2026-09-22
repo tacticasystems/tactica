@@ -72,14 +72,14 @@ impl FromRequestParts<ApiState> for Principal {
                 let parts = header.split_once(' ');
                 if let Some((scheme, token)) = parts {
                     if scheme == "Bearer" {
-                        return Some(token.to_string());
+                        Some(token.to_string())
                     } else {
                         println!("Invalid authorization scheme: {}", scheme);
-                        return None;
+                        None
                     }
                 } else {
                     println!("Invalid authorization header format");
-                    return None;
+                    None
                 }
             });
 

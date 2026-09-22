@@ -1832,7 +1832,6 @@ dependencies = [
  "tactica-db",
  "tactica-db-model",
  "tactica-db-schema",
- "tactica-uuid-kinds",
  "thiserror",
  "tokio",
  "tower-http",

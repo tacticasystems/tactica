@@ -26,8 +26,3 @@ tactica-auth.workspace = true
 tactica-db-schema = { workspace = true, features = ["migrations"] }
 tactica-db-model.workspace = true
 tactica-db.workspace = true
-tactica-uuid-kinds = { workspace = true, features = [
-  "serde",
-  "utoipa",
-  "chrono",
-] }

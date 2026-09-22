@@ -61,23 +61,22 @@ impl JwtContext {
 
     pub fn generate_jwt_for_user(&self, user_id: UserId) -> Result<String, JwtError> {
         let now = Utc::now();
-        let exp = now.clone() + self.max_token_lifetime;
+        let exp = now + self.max_token_lifetime;
 
         let claims = Claims {
-            sub: format!("{}", user_id.to_string()),
+            sub: user_id.to_string(),
             tty: "user".to_string(),
             exp: exp.timestamp(),
             nbf: now.timestamp(),
         };
 
-        let mut header = Header::default();
-        header.alg = jsonwebtoken::Algorithm::EdDSA;
+        let header = Header::new(jsonwebtoken::Algorithm::EdDSA);
 
         encode(&header, &claims, &self.encoding_key).map_err(JwtError::Encode)
     }
 
     pub fn validate_jwt(&self, token: &str) -> Result<Claims, JwtError> {
-        let mut validation = jsonwebtoken::Validation::default();
+        let mut validation = jsonwebtoken::Validation::new(Algorithm::EdDSA);
         validation.validate_nbf = true;
         validation.validate_exp = true;
         validation.algorithms = vec![Algorithm::EdDSA];

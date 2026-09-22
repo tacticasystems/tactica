@@ -18,9 +18,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_BODY_BYTES: usize = 1024 * 1024;
 
 pub fn router(state: ApiState) -> Router {
-    let router = routes(state);
-
-    router
+    routes(state)
 }
 
 fn routes(state: ApiState) -> Router {

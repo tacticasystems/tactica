@@ -12,7 +12,7 @@ pub enum Error {
     NotFound,
 
     #[error("Validation failed: {0}")]
-    ValidationError(String),
+    Validation(String),
 
     #[error("Unauthorized: {0}")]
     Unauthorized(String),
@@ -31,14 +31,11 @@ impl IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
         let status = match &self {
             Error::NotFound => axum::http::StatusCode::NOT_FOUND,
-            Error::ValidationError(_) => axum::http::StatusCode::BAD_REQUEST,
+            Error::Validation(_) => axum::http::StatusCode::BAD_REQUEST,
             Error::Unauthorized(_) => axum::http::StatusCode::UNAUTHORIZED,
             Error::Forbidden(_) => axum::http::StatusCode::FORBIDDEN,
 
-            Error::Store(err) => match err {
-                StoreError::Conflict => axum::http::StatusCode::CONFLICT,
-                _ => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            },
+            Error::Store(StoreError::Conflict) => axum::http::StatusCode::CONFLICT,
 
             _ => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
         };
@@ -46,21 +43,16 @@ impl IntoResponse for Error {
         let error = v1::ApiError {
             code: match &self {
                 Error::NotFound => "not_found".to_string(),
-                Error::ValidationError(_) => "validation_error".to_string(),
+                Error::Validation(_) => "validation_error".to_string(),
 
-                Error::Store(err) => match err {
-                    StoreError::Conflict => "conflict".to_string(),
-                    _ => "internal_server_error".to_string(),
-                },
+                Error::Store(StoreError::Conflict) => "conflict".to_string(),
 
                 _ => "internal_server_error".to_string(),
             },
             message: match &self {
-                Error::Store(err) => match err {
-                    StoreError::Conflict => "A conflict occurred with the database.".to_string(),
-                    _ => "Internal server error".to_string(),
-                },
-
+                Error::Store(StoreError::Conflict) => {
+                    "A conflict occurred with the database.".to_string()
+                }
                 _ => self.to_string(),
             },
 

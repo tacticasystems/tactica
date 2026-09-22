@@ -7,9 +7,8 @@ use crate::jwt::JwtContext;
 
 pub mod jwt;
 pub mod principal;
-pub mod utils;
 
-pub(crate) const ARGON2: OnceCell<Argon2> = OnceCell::const_new();
+pub(crate) static ARGON2: OnceCell<Argon2> = OnceCell::const_new();
 
 pub(crate) async fn get_argon2() -> Argon2<'static> {
     ARGON2.get_or_init(async || Argon2::default()).await.clone()
@@ -51,7 +50,7 @@ impl AuthContext {
     ) -> Result<String, argon2::password_hash::Error> {
         let argon2 = get_argon2().await;
         let password_hash =
-            argon2.hash_password_with_salt(password.as_bytes(), &self.salt.as_bytes())?;
+            argon2.hash_password_with_salt(password.as_bytes(), self.salt.as_bytes())?;
         Ok(password_hash.to_string())
     }
 }
