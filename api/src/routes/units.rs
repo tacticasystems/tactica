@@ -1,10 +1,10 @@
 use axum::{Json, Router, extract::Query, response::IntoResponse, routing::{get, post}};
 use tactica_api_types::v1;
 use tactica_auth::principal;
-use tactica_db_model::{CreateUnit, ListPagination, NewUnit, UnitFilter, UnitStore};
+use tactica_db_model::{CreateUnit, ListPagination, NewUnit, StoreError, UnitFilter, UnitStore};
 use tactica_uuid_kinds::UnitId;
 
-use crate::{error::Result, state::{ApiState, Principal, Storage}};
+use crate::{error::{Error, Result}, state::{ApiState, Principal, Storage}};
 
 pub fn router() -> Router<ApiState> {
     Router::new()
@@ -67,6 +67,13 @@ async fn create_unit(
         },
     )
         .await
+        .map_err(|err| {
+            if matches!(err, StoreError::Conflict) {
+                Error::Forbidden("A unit with that slug already exists".to_string())
+            } else {
+                err.into()
+            }
+        })
         .inspect_err(|err| tracing::error!(?err, "Failed to create unit with defaults"))?;
 
     Ok(Json(v1::units::CreateUnitResponse {
