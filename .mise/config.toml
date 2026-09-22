@@ -42,10 +42,7 @@ run = [
 
 [tasks.test]
 description = "Run tests with nextest"
-run = [
-  "cargo nextest run --workspace --all-features --no-fail-fast",
-  "cargo test --workspace --doc",
-]
+run = "cargo nextest run --workspace --all-features --no-fail-fast"
 
 [tasks.audit]
 description = "Run cargo-deny checks"

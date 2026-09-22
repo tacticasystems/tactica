@@ -1,8 +1,8 @@
 use axum::{Json, Router, extract::Query, response::IntoResponse, routing::{get, post}};
 use tactica_api_types::v1;
 use tactica_auth::principal;
-use tactica_db_model::{ListPagination, NewUnit, NewUnitMembership, NewUnitRank, NewUnitSettings, UnitFilter, UnitMembershipStore, UnitRankStore, UnitSettingsStore, UnitStore};
-use tactica_uuid_kinds::{MemberId, RankId, UnitId};
+use tactica_db_model::{CreateUnit, ListPagination, NewUnit, UnitFilter, UnitStore};
+use tactica_uuid_kinds::UnitId;
 
 use crate::{error::Result, state::{ApiState, Principal, Storage}};
 
@@ -52,82 +52,32 @@ async fn create_unit(
         _ => unreachable!(),
     };
 
-    let unit = UnitStore::create(
+    let created = UnitStore::create_with_defaults(
         stg.as_ref(),
-        NewUnit {
+        CreateUnit {
+            owner_id: user_id,
+            unit: NewUnit {
             id: UnitId::new(),
             slug: body.slug,
             display_name: Some(body.display_name),
             icon_url: body.icon_url,
             banner_url: body.banner_url,
             biography: body.biography,
+            },
         },
     )
         .await
-        .inspect_err(|err| tracing::error!(?err, "Failed to create unit"))?;
-
-    let unit_rank = UnitRankStore::create(
-        stg.as_ref(),
-        NewUnitRank {
-            id: RankId::new(),
-            unit_id: unit.id,
-            slug: "Maj.".to_string(),
-            display_name: Some("Major".to_string()),
-            description: Some("The owner of the unit".to_string()),
-            icon_url: None,
-        }
-    )
-        .await
-        .inspect_err(|err| tracing::error!(?err, "Failed to create unit rank"))?;
-
-    let unit_join_rank = UnitRankStore::create(
-        stg.as_ref(),
-        NewUnitRank {
-            id: RankId::new(),
-            unit_id: unit.id,
-            slug: "Pvt.".to_string(),
-            display_name: Some("Private".to_string()),
-            description: Some("The enlisted members".to_string()),
-            icon_url: None,
-        }
-    )
-        .await
-        .inspect_err(|err| tracing::error!(?err, "Failed to create unit rank"))?;
-
-    UnitSettingsStore::create(
-        stg.as_ref(),
-        NewUnitSettings {
-            unit_id: unit.id,
-            initial_rank_id: unit_join_rank.id,
-            discord_guild_id: None,
-            discord_guild_joined_at: None,
-            updated_by: Some(user_id),
-        },
-    )
-        .await
-        .inspect_err(|err| tracing::error!(?err, "Failed to create unit settings"))?;
-
-    let unit_member = UnitMembershipStore::create(
-        stg.as_ref(),
-        NewUnitMembership {
-            id: MemberId::new(),
-            rank_id: unit_rank.id,
-            unit_id: unit.id,
-            user_id: user_id,
-        }
-    )
-        .await
-        .inspect_err(|err| tracing::error!(?err, "Failed to create unit membership"))?;
+        .inspect_err(|err| tracing::error!(?err, "Failed to create unit with defaults"))?;
 
     Ok(Json(v1::units::CreateUnitResponse {
-        id: unit.id,
-        slug: unit.slug,
-        display_name: unit.display_name.unwrap(),
-        icon_url: unit.icon_url,
-        banner_url: unit.banner_url,
-        biography: unit.biography,
+        id: created.unit.id,
+        slug: created.unit.slug,
+        display_name: created.unit.display_name.unwrap(),
+        icon_url: created.unit.icon_url,
+        banner_url: created.unit.banner_url,
+        biography: created.unit.biography,
 
-        rank_id: unit_rank.id,
-        member_id: unit_member.id,
+        rank_id: created.owner_rank_id,
+        member_id: created.owner_membership_id,
     }))
 }

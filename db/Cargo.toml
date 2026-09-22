@@ -16,5 +16,10 @@ tactica-uuid-kinds.workspace = true
 tactica-db-schema.workspace = true
 tactica-db-model.workspace = true
 
+[dev-dependencies]
+tokio.workspace = true
+testcontainers-modules = { version = "0.15", features = ["postgres"] }
+tactica-db-schema = { workspace = true, features = ["migrations"] }
+
 [lints]
 workspace = true

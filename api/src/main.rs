@@ -22,7 +22,12 @@ struct Args {
     #[clap(long, short, env = "TACTICA_AUTH_SALT")]
     auth_salt: String,
 
-    #[clap(long, short, env = "TACTICA_LISTEN_ADDR", default_value = "0.0.0.0:8080")]
+    #[clap(
+        long,
+        short,
+        env = "TACTICA_LISTEN_ADDR",
+        default_value = "0.0.0.0:8080"
+    )]
     listen_addr: SocketAddr,
 }
 
@@ -61,12 +66,9 @@ async fn main() {
         tactica_auth::jwt::JwtContext::from_files(&args.jwt_key_pub_path, &args.jwt_key_priv_path)
             .expect("Failed to create JWT context");
 
-    let auth_context = tactica_auth::AuthContext::new(
-        Arc::new(conn.clone()),
-        jwt_context,
-        &args.auth_salt,
-    )
-        .expect("Failed to create AuthContext");
+    let auth_context =
+        tactica_auth::AuthContext::new(Arc::new(conn.clone()), jwt_context, &args.auth_salt)
+            .expect("Failed to create AuthContext");
 
     let state = ApiState::new(Arc::new(conn), Arc::new(auth_context));
 
