@@ -25,10 +25,17 @@ pub struct JwtContext {
     max_token_lifetime: Duration,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TokenType {
+    User,
+    Service,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
-    pub tty: String,
+    pub tty: TokenType,
     pub exp: i64,
     pub nbf: i64,
 }
@@ -67,7 +74,7 @@ impl JwtContext {
 
         let claims = Claims {
             sub: user_id.to_string(),
-            tty: "user".to_string(),
+            tty: TokenType::User,
             exp: exp.timestamp(),
             nbf: now.timestamp(),
         };
