@@ -51,11 +51,13 @@ impl JwtContext {
         Self::new(&pubkey, &privkey)
     }
 
-    pub fn encoding_key(&self) -> &EncodingKey {
+    #[must_use]
+    pub const fn encoding_key(&self) -> &EncodingKey {
         &self.encoding_key
     }
 
-    pub fn decoding_key(&self) -> &DecodingKey {
+    #[must_use]
+    pub const fn decoding_key(&self) -> &DecodingKey {
         &self.decoding_key
     }
 

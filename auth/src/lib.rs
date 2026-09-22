@@ -26,20 +26,22 @@ impl AuthContext {
     pub fn new(
         storage: Arc<dyn TacticaStorage>,
         jwt: JwtContext,
-        salt: String,
+        salt: &str,
     ) -> Result<Self, argon2::password_hash::phc::Error> {
         Ok(Self {
             storage,
             jwt,
 
-            salt: SaltString::from_b64(&salt)?,
+            salt: SaltString::from_b64(salt)?,
         })
     }
 
+    #[must_use]
     pub fn storage(&self) -> Arc<dyn TacticaStorage> {
         self.storage.clone()
     }
 
+    #[must_use]
     pub fn jwt(&self) -> JwtContext {
         self.jwt.clone()
     }

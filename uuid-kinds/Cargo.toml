@@ -20,3 +20,6 @@ serde = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true }
 utoipa = { workspace = true, optional = true }
 diesel = { workspace = true, optional = true }
+
+[lints]
+workspace = true

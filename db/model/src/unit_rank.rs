@@ -38,16 +38,19 @@ pub struct UnitRankFilter {
 }
 
 impl UnitRankFilter {
+    #[must_use]
     pub fn id(mut self, id: Vec<RankId>) -> Self {
         self.id = Some(id);
         self
     }
 
+    #[must_use]
     pub fn unit_id(mut self, unit_id: Vec<UnitId>) -> Self {
         self.unit_id = Some(unit_id);
         self
     }
 
+    #[must_use]
     pub fn slug(mut self, slug: Vec<String>) -> Self {
         self.slug = Some(slug);
         self

@@ -36,11 +36,13 @@ pub struct UnitFilter {
 }
 
 impl UnitFilter {
+    #[must_use]
     pub fn id(mut self, id: Vec<UnitId>) -> Self {
         self.id = Some(id);
         self
     }
 
+    #[must_use]
     pub fn slug(mut self, slug: Vec<String>) -> Self {
         self.slug = Some(slug);
         self

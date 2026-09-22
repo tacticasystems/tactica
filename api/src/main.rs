@@ -57,7 +57,7 @@ async fn main() {
     let auth_context = tactica_auth::AuthContext::new(
         Arc::new(conn.clone()),
         jwt_context,
-        std::env::var("TACTICA_AUTH_SALT").expect("TACTICA_AUTH_SALT must be set"),
+        &std::env::var("TACTICA_AUTH_SALT").expect("TACTICA_AUTH_SALT must be set"),
     )
     .expect("Failed to create AuthContext");
 

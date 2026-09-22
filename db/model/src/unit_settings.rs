@@ -35,21 +35,25 @@ pub struct UnitSettingsFilter {
 }
 
 impl UnitSettingsFilter {
+    #[must_use]
     pub fn unit_id(mut self, unit_id: Vec<UnitId>) -> Self {
         self.unit_id = Some(unit_id);
         self
     }
 
+    #[must_use]
     pub fn discord_guild_id(mut self, discord_guild_id: Vec<String>) -> Self {
         self.discord_guild_id = Some(discord_guild_id);
         self
     }
 
+    #[must_use]
     pub fn initial_rank_id(mut self, initial_rank_id: Vec<RankId>) -> Self {
         self.initial_rank_id = Some(initial_rank_id);
         self
     }
 
+    #[must_use]
     pub fn updated_by(mut self, updated_by: Vec<UserId>) -> Self {
         self.updated_by = Some(updated_by);
         self

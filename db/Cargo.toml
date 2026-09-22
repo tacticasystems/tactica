@@ -14,3 +14,6 @@ diesel-async.workspace = true
 tactica-uuid-kinds.workspace = true
 tactica-db-schema.workspace = true
 tactica-db-model.workspace = true
+
+[lints]
+workspace = true

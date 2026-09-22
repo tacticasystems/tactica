@@ -31,6 +31,7 @@ impl PgConnection {
         self.0.get().await
     }
 
+    #[must_use]
     pub fn pool(&self) -> Pool<AsyncPgConnection> {
         self.0.clone()
     }

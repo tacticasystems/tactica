@@ -29,53 +29,40 @@ async fn login(
     AuthCtx(auth_ctx): AuthCtx,
     Json(body): Json<v1::auth::LoginRequest>,
 ) -> Result<impl IntoResponse> {
-    let user = UserStore::get_by_username(stg.as_ref(), &body.username).await?;
-    if user.is_none() {
-        return Err(Error::Unauthorized(
-            "invalid username or password".to_string(),
-        ));
-    }
-    let user = user.unwrap();
+    let user = UserStore::get_by_username(stg.as_ref(), &body.username)
+        .await?
+        .ok_or_else(|| Error::Unauthorized("invalid username or password".to_string()))?;
 
-    if user.password_hash.is_none() {
-        println!("User {} has no password hash", user.username);
-        return Err(Error::Unauthorized(
-            "invalid username or password".to_string(),
-        ));
-    }
-    let password_hash = user.password_hash.unwrap();
+    let password_hash = user
+        .password_hash
+        .ok_or_else(|| Error::Unauthorized("invalid username or password".to_string()))?;
 
-    println!(
-        "{}",
-        auth_ctx.hash_password(&body.password).await.map_err(|e| {
-            println!("Failed to hash password: {}", e);
-            Error::Other(anyhow!("failed to hash password: {}", e))
-        })?
-    );
     if !auth_ctx
         .hash_password(&body.password)
         .await
-        .map_err(|e| {
-            println!("Failed to hash password: {}", e);
-            Error::Other(anyhow!("failed to hash password: {}", e))
+        .map_err(|err| {
+            tracing::error!(?err, "Failed to hash password");
+            Error::Other(anyhow!("failed to hash password: {err}"))
         })?
         .eq(&password_hash)
     {
-        println!("Password hash does not match for user {}", user.username);
         return Err(Error::Unauthorized(
             "invalid username or password".to_string(),
         ));
     }
 
-    let token = auth_ctx.jwt().generate_jwt_for_user(user.id).map_err(|e| {
-        println!("Failed to generate JWT: {}", e);
-        Error::Other(anyhow!("failed to generate JWT: {}", e))
-    })?;
+    let token = auth_ctx
+        .jwt()
+        .generate_jwt_for_user(user.id)
+        .map_err(|err| {
+            tracing::error!(?err, "Failed to generate JWT");
+            Error::Other(anyhow!("failed to generate JWT: {err}"))
+        })?;
 
     Ok(Json(v1::auth::LoginResponse {
         token_type: "Bearer".to_string(),
         access_token: token,
-        refresh_token: "".to_string(),
+        refresh_token: String::new(),
         expires_in: 3600,
     }))
 }
@@ -87,8 +74,6 @@ async fn register() -> &'static str {
 async fn me(Storage(stg): Storage, Principal(principal): Principal) -> Result<impl IntoResponse> {
     match principal {
         tactica_auth::principal::Principal::User(user_id) => {
-            println!("Authenticated user ID: {}", user_id);
-
             let user = UserStore::get(stg.as_ref(), user_id).await?;
             if let Some(user) = user {
                 Ok(Json(v1::auth::MeResponse {
@@ -107,9 +92,6 @@ async fn me(Storage(stg): Storage, Principal(principal): Principal) -> Result<im
             } else {
                 Err(Error::Unauthorized("User not found".to_string()))
             }
-        }
-
-        #[allow(unused)]
-        _ => Err(Error::Unauthorized("Invalid principal type".to_string())),
+        } // _ => Err(Error::Unauthorized("Invalid principal type".to_string())),
     }
 }

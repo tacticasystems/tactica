@@ -36,16 +36,19 @@ pub struct UnitRoleFilter {
 }
 
 impl UnitRoleFilter {
+    #[must_use]
     pub fn id(mut self, id: Vec<RoleId>) -> Self {
         self.id = Some(id);
         self
     }
 
+    #[must_use]
     pub fn unit_id(mut self, unit_id: Vec<UnitId>) -> Self {
         self.unit_id = Some(unit_id);
         self
     }
 
+    #[must_use]
     pub fn display_name(mut self, display_name: Vec<String>) -> Self {
         self.display_name = Some(display_name);
         self

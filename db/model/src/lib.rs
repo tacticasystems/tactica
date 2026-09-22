@@ -71,7 +71,7 @@ impl From<diesel::result::Error> for StoreError {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ListPagination {
     pub offset: i64,
     pub limit: i64,
@@ -98,20 +98,24 @@ pub enum SortDirection {
 }
 
 impl ListPagination {
+    #[must_use]
     pub fn latest() -> Self {
         Self::default().limit(1)
     }
 
+    #[must_use]
     pub fn unlimited() -> Self {
-        ListPagination::default().limit(9999999999)
+        Self::default().limit(9_999_999_999)
     }
 
-    pub fn offset(mut self, offset: i64) -> Self {
+    #[must_use]
+    pub const fn offset(mut self, offset: i64) -> Self {
         self.offset = offset;
         self
     }
 
-    pub fn limit(mut self, limit: i64) -> Self {
+    #[must_use]
+    pub const fn limit(mut self, limit: i64) -> Self {
         self.limit = limit;
         self
     }

@@ -36,7 +36,7 @@ impl FromRequestParts<ApiState> for Storage {
         _parts: &mut axum::http::request::Parts,
         state: &ApiState,
     ) -> Result<Self, Self::Rejection> {
-        Ok(Storage(state.storage()))
+        Ok(Self(state.storage()))
     }
 }
 
@@ -50,7 +50,7 @@ impl FromRequestParts<ApiState> for AuthCtx {
         _parts: &mut axum::http::request::Parts,
         state: &ApiState,
     ) -> Result<Self, Self::Rejection> {
-        Ok(AuthCtx(state.auth()))
+        Ok(Self(state.auth()))
     }
 }
 
@@ -74,35 +74,33 @@ impl FromRequestParts<ApiState> for Principal {
                     if scheme == "Bearer" {
                         Some(token.to_string())
                     } else {
-                        println!("Invalid authorization scheme: {}", scheme);
+                        tracing::debug!(?scheme, "Invalid authorization scheme");
                         None
                     }
                 } else {
-                    println!("Invalid authorization header format");
+                    tracing::debug!("Invalid authorization header format");
                     None
                 }
-            });
+            })
+            .ok_or_else(|| {
+                tracing::debug!("No authorization header found");
+                Error::Unauthorized("No bearer token found in request".to_string())
+            })?;
 
-        if bearer_token.is_none() {
-            println!("No bearer token found in request");
-            return Err(Error::Unauthorized(
-                "No bearer token found in request".to_string(),
-            ));
-        }
-        let bearer_token = bearer_token.unwrap();
+        let claims = state
+            .auth
+            .jwt()
+            .validate_jwt(&bearer_token)
+            .map_err(|err| {
+                tracing::debug!(?err, "Failed to validate JWT");
+                Error::Unauthorized("Invalid or expired token".to_string())
+            })?;
 
-        let claims = state.auth.jwt().validate_jwt(&bearer_token).map_err(|e| {
-            println!("Failed to validate JWT: {}", e);
-            Error::Unauthorized("Invalid or expired token".to_string())
-        })?;
-
-        Ok(Principal(
-            tactica_auth::principal::Principal::from_jwt_claims(&claims)
-                .await
-                .map_err(|e| {
-                    println!("Failed to extract principal from claims: {}", e);
-                    Error::Unauthorized("Invalid token claims".to_string())
-                })?,
+        Ok(Self(
+            tactica_auth::principal::Principal::from_jwt_claims(&claims).map_err(|err| {
+                tracing::debug!(?err, "Failed to extract principal from claims");
+                Error::Unauthorized("Invalid token claims".to_string())
+            })?,
         ))
     }
 }

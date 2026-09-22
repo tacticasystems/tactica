@@ -35,21 +35,25 @@ pub struct UnitMembershipFilter {
 }
 
 impl UnitMembershipFilter {
+    #[must_use]
     pub fn id(mut self, id: Vec<MemberId>) -> Self {
         self.id = Some(id);
         self
     }
 
+    #[must_use]
     pub fn user_id(mut self, user_id: Vec<UserId>) -> Self {
         self.user_id = Some(user_id);
         self
     }
 
+    #[must_use]
     pub fn unit_id(mut self, unit_id: Vec<UnitId>) -> Self {
         self.unit_id = Some(unit_id);
         self
     }
 
+    #[must_use]
     pub fn rank_id(mut self, rank_id: Vec<RankId>) -> Self {
         self.rank_id = Some(rank_id);
         self

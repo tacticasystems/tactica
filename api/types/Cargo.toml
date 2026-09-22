@@ -15,3 +15,6 @@ tactica-uuid-kinds = { workspace = true, features = ["serde"] }
 chrono.workspace = true
 serde.workspace = true
 utoipa = { workspace = true, optional = true }
+
+[lints]
+workspace = true

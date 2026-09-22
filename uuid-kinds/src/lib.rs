@@ -24,12 +24,12 @@ macro_rules! impl_typed_uuid_kinds {
             }
 
             /// Creates a new instance of $ident with a nil UUID.
-            pub fn empty() -> Self {
+            pub const fn empty() -> Self {
                 $ident(::uuid::Uuid::nil())
             }
 
             /// Returns the inner UUID.
-            pub fn as_uuid(&self) -> &::uuid::Uuid {
+            pub const fn as_uuid(&self) -> &::uuid::Uuid {
                 &self.0
             }
 

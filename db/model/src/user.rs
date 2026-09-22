@@ -44,16 +44,19 @@ pub struct UserFilter {
 }
 
 impl UserFilter {
+    #[must_use]
     pub fn id(mut self, id: Vec<UserId>) -> Self {
         self.id = Some(id);
         self
     }
 
+    #[must_use]
     pub fn email(mut self, email: Vec<String>) -> Self {
         self.email = Some(email);
         self
     }
 
+    #[must_use]
     pub fn username(mut self, username: Vec<String>) -> Self {
         self.username = Some(username);
         self
