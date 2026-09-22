@@ -8,6 +8,7 @@ mod unit_settings;
 mod user;
 
 use diesel_async::pooled_connection::{PoolError, bb8::RunError};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 pub use unit::*;
 pub use unit_membership::*;
@@ -71,17 +72,35 @@ impl From<diesel::result::Error> for StoreError {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub struct ListPagination {
-    pub offset: i64,
-    pub limit: i64,
+    #[serde(default)]
+    pub offset: Offset,
+    #[serde(default)]
+    pub limit: Limit,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
+pub struct Offset(pub i64);
+impl Default for Offset {
+    fn default() -> Self {
+        Self(0)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
+pub struct Limit(pub i64);
+impl Default for Limit {
+    fn default() -> Self {
+        Self(10)
+    }
 }
 
 impl Default for ListPagination {
     fn default() -> Self {
         Self {
-            offset: 0,
-            limit: 10,
+            offset: Offset(0),
+            limit: Limit(10),
         }
     }
 }
@@ -110,13 +129,13 @@ impl ListPagination {
 
     #[must_use]
     pub const fn offset(mut self, offset: i64) -> Self {
-        self.offset = offset;
+        self.offset = Offset(offset);
         self
     }
 
     #[must_use]
     pub const fn limit(mut self, limit: i64) -> Self {
-        self.limit = limit;
+        self.limit = Limit(limit);
         self
     }
 }

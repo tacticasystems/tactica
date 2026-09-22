@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod auth;
+pub mod units;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]

@@ -26,6 +26,7 @@ thiserror.workspace = true
 async-trait.workspace = true
 partial-struct.workspace = true
 mockall = { workspace = true, optional = true }
+serde.workspace = true
 
 [lints]
 workspace = true

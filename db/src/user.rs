@@ -35,8 +35,8 @@ impl UserStore for PgConnection {
         }
 
         let users = query
-            .offset(pagination.offset)
-            .limit(pagination.limit)
+            .offset(pagination.offset.0)
+            .limit(pagination.limit.0)
             .get_results::<User>(&mut self.conn().await?)
             .await?;
 
