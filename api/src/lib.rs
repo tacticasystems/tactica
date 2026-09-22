@@ -30,6 +30,7 @@ fn routes(state: ApiState) -> Router {
         .merge(routes::ranks::router().with_state(state.clone()))
         .merge(routes::roles::router().with_state(state.clone()))
         .merge(routes::members::router().with_state(state.clone()))
+        .merge(routes::health::router().with_state(state.clone()))
         .layer(RequestBodyLimitLayer::new(MAX_BODY_BYTES))
         .fallback(async || -> Response { Error::NotFound.into_response() })
         .with_state(state);
