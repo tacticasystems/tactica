@@ -1,8 +1,30 @@
-use std::{net::SocketAddr, sync::Arc};
+use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 
+use clap::Parser;
 use tactica_api::{router, state::ApiState};
 use tactica_db_schema::migrations::{AsyncMigrationHarness, MIGRATIONS, MigrationHarness};
 use tokio::net::TcpListener;
+
+#[derive(Parser)]
+struct Args {
+    #[clap(long, short, env = "TACTICA_DB_URL")]
+    database_url: String,
+
+    #[clap(long, short, env = "TACTICA_RUN_MIGRATIONS", default_value = "false")]
+    run_migrations: bool,
+
+    #[clap(long, short, env = "TACTICA_JWT_KEY_PUB_PATH")]
+    jwt_key_pub_path: PathBuf,
+
+    #[clap(long, short, env = "TACTICA_JWT_KEY_PRIV_PATH")]
+    jwt_key_priv_path: PathBuf,
+
+    #[clap(long, short, env = "TACTICA_AUTH_SALT")]
+    auth_salt: String,
+
+    #[clap(long, short, env = "TACTICA_LISTEN_ADDR", default_value = "0.0.0.0:8080")]
+    listen_addr: SocketAddr,
+}
 
 #[tokio::main]
 async fn main() {
@@ -10,18 +32,13 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    // TODO: replace with clap
-    let database_url = std::env::var("TACTICA_DB_URL").expect("TACTICA_DB_URL must be set");
-    let conn = tactica_db::PgConnection::new(&database_url)
+    let args = Args::parse();
+
+    let conn = tactica_db::PgConnection::new(&args.database_url)
         .await
         .expect("Failed to connect to database");
 
-    let should_run_migrations = std::env::var("TACTICA_RUN_MIGRATIONS")
-        .unwrap_or_else(|_| "false".to_string())
-        .parse::<bool>()
-        .expect("Failed to parse TACTICA_RUN_MIGRATIONS");
-
-    if should_run_migrations {
+    if args.run_migrations {
         tracing::info!("running migrations...");
 
         let mut harness = AsyncMigrationHarness::new(
@@ -40,39 +57,24 @@ async fn main() {
         return;
     }
 
-    let jwt_key_pub_path = std::env::var("TACTICA_JWT_KEY_PUB_PATH")
-        .expect("TACTICA_JWT_KEY_PUB_PATH must be set")
-        .parse()
-        .expect("Failed to parse TACTICA_JWT_KEY_PUB_PATH");
-
-    let jwt_key_priv_path = std::env::var("TACTICA_JWT_KEY_PRIV_PATH")
-        .expect("TACTICA_JWT_KEY_PRIV_PATH must be set")
-        .parse()
-        .expect("Failed to parse TACTICA_JWT_KEY_PRIV_PATH");
-
     let jwt_context =
-        tactica_auth::jwt::JwtContext::from_files(&jwt_key_pub_path, &jwt_key_priv_path)
+        tactica_auth::jwt::JwtContext::from_files(&args.jwt_key_pub_path, &args.jwt_key_priv_path)
             .expect("Failed to create JWT context");
 
     let auth_context = tactica_auth::AuthContext::new(
         Arc::new(conn.clone()),
         jwt_context,
-        &std::env::var("TACTICA_AUTH_SALT").expect("TACTICA_AUTH_SALT must be set"),
+        &args.auth_salt,
     )
-    .expect("Failed to create AuthContext");
-
-    let listen_addr: SocketAddr = std::env::var("TACTICA_LISTEN_ADDR")
-        .unwrap_or_else(|_| "0.0.0.0:8080".to_string())
-        .parse()
-        .expect("Failed to parse LISTEN_ADDR");
+        .expect("Failed to create AuthContext");
 
     let state = ApiState::new(Arc::new(conn), Arc::new(auth_context));
 
-    let listener = TcpListener::bind(listen_addr)
+    let listener = TcpListener::bind(args.listen_addr)
         .await
         .expect("Failed to bind to listen address");
 
-    tracing::info!("listening on {}", listen_addr);
+    tracing::info!(addr = ?args.listen_addr, "server listening");
 
     let router = router(state);
     axum::serve(listener, router)
