@@ -9,7 +9,7 @@ binstall_native = true
 [env]
 _.file = ".env"
 RUST_BACKTRACE = "1"
-PKG_CONFIG_PATH = "{{ exec(command='mise bootstrap packages where brew:libpq') }}/lib/pkgconfig"
+PKG_CONFIG_PATH = "{{ exec(command='mise bootstrap packages where brew:libpq || \"/tmp\"') }}/lib/pkgconfig"
 
 [bootstrap.packages]
 "brew:pkgconf" = "3.0.7"
