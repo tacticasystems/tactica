@@ -4,6 +4,7 @@ auto_env = true
 
 [settings.cargo]
 binstall = true
+binstall_native = true
 
 [env]
 _.file = ".env"
