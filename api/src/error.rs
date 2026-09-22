@@ -29,36 +29,59 @@ pub enum Error {
 
 impl IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
-        let status = match &self {
-            Self::NotFound => axum::http::StatusCode::NOT_FOUND,
-            Self::Validation(_) => axum::http::StatusCode::BAD_REQUEST,
-            Self::Unauthorized(_) => axum::http::StatusCode::UNAUTHORIZED,
-            Self::Forbidden(_) => axum::http::StatusCode::FORBIDDEN,
+        let (status_code, message, code) = match &self {
+            Self::NotFound => (
+                axum::http::StatusCode::NOT_FOUND,
+                "Resource not found".to_string(),
+                "not_found".to_string(),
+            ),
 
-            Self::Store(StoreError::Conflict) => axum::http::StatusCode::CONFLICT,
+            Self::Validation(msg) => (
+                axum::http::StatusCode::BAD_REQUEST,
+                msg.clone(),
+                "invalid_input".to_string(),
+            ),
 
-            _ => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            Self::Unauthorized(msg) => (
+                axum::http::StatusCode::UNAUTHORIZED,
+                msg.clone(),
+                "unauthorized".to_string(),
+            ),
+
+            Self::Forbidden(msg) => (
+                axum::http::StatusCode::FORBIDDEN,
+                msg.clone(),
+                "forbidden".to_string(),
+            ),
+
+            Self::Store(StoreError::Conflict) => (
+                axum::http::StatusCode::CONFLICT,
+                "A conflict occurred with the database.".to_string(),
+                "conflict".to_string(),
+            ),
+
+            Self::Other(err) => {
+                tracing::error!("Internal server error: {:?}", err);
+                (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    "An internal server error occurred.".to_string(),
+                    "internal_server_error".to_string(),
+                )
+            },
+
+            _ => (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "An internal server error occurred.".to_string(),
+                "internal_server_error".to_string(),
+            ),
         };
 
         let error = v1::ApiError {
-            code: match &self {
-                Self::NotFound => "not_found".to_string(),
-                Self::Validation(_) => "validation_error".to_string(),
-
-                Self::Store(StoreError::Conflict) => "conflict".to_string(),
-
-                _ => "internal_server_error".to_string(),
-            },
-            message: match &self {
-                Self::Store(StoreError::Conflict) => {
-                    "A conflict occurred with the database.".to_string()
-                }
-                _ => self.to_string(),
-            },
-
+            code,
+            message,
             details: None,
         };
 
-        (status, axum::Json(error)).into_response()
+        (status_code, axum::Json(error)).into_response()
     }
 }
