@@ -64,6 +64,8 @@ run = "cargo run --bin tactica-api"
 description = "Build docker image for the API"
 usage = """
 arg "<bin>" help="The binary to build"
+flag "--tag <tag>" help="The tag to build the docker image with" default="dev"
+flag "--prefix <prefix>" help="The prefix to build the docker image with" default="git.hayden.moe/tactica/tactica"
 """
 env.RUST_VERSION = { tools = true, value = "{{ tools.rust.version }}" }
 run = """
@@ -71,7 +73,7 @@ docker build . \
   --build-arg BIN=${usage_bin} \
   --build-arg RUST_VERSION=${RUST_VERSION} \
   --file Dockerfile \
-  --tag "${TACTICA_IMAGE_PREFIX:-git.hayden.moe/tactica/tactica}/api:${TACTICA_IMAGE_TAG:-dev}" \
+  --tag "${usage_prefix}/api:${usage_tag}" \
 """
 
 [tasks.gen-jwt-keys]
