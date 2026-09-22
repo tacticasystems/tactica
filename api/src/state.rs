@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use axum::extract::FromRequestParts;
-use tactica_api_types::v1::ApiError;
 use tactica_auth::AuthContext;
 use tactica_db_model::TacticaStorage;
 

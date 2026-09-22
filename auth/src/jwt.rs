@@ -1,4 +1,4 @@
-use std::{path::PathBuf, time::{Duration, Instant, SystemTime}};
+use std::{path::PathBuf, time::Duration};
 
 use chrono::Utc;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, encode};
