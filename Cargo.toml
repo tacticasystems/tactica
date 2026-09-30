@@ -109,7 +109,7 @@ thiserror = "2.0"
 chrono = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 uuid = { version = "1.26", features = ["v7"] }
-utoipa = "5.5"
+utoipa = "6.0"
 syn = "3.0"
 proc-macro2 = "1.0"
 quote = "1.0"
