@@ -28,7 +28,7 @@ jobs:
           persist-credentials: false
 
       - name: Check changed shared files
-        id: web
+        id: shared
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: |
@@ -65,7 +65,7 @@ jobs:
 
   rust:
     name: Rust
-    if: needs.changes.outputs.shared || needs.changes.outputs.rust
+    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.rust == 'true'
     needs: changes
     permissions:
       contents: read
@@ -75,7 +75,7 @@ jobs:
 
   web:
     name: Web
-    if: needs.changes.outputs.shared || needs.changes.outputs.web
+    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.web == 'true'
     needs: changes
     permissions:
       contents: read
