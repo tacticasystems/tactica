@@ -80,7 +80,7 @@
       ],
       datasourceTemplate: '{{#if datasource}}{{{datasource}}}{{else}}github-releases{{/if}}'
     },
-	]
+	],
 
   timezone: 'Europe/London',
   labels: ['dependencies'],
