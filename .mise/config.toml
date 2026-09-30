@@ -19,6 +19,10 @@ rust = "1.98.1"
 "aqua:crate-ci/typos" = "1.50.2"
 "aqua:grafana/k6" = "2.3.0"
 
+[tasks.rust-components]
+description = "Build all of the released components of the workspace"
+run = "rustup component add rustfmt clippy"
+
 [tasks.build]
 description = "Build all of the released components of the workspace"
 run = "cargo build --package tactica-api --release"
