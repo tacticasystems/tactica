@@ -48,6 +48,17 @@ jobs:
       - uses: ./.github/actions/setup-repo
       - run: cargo doc --workspace --all-features --no-deps
 
+  versions:
+    runs-on: ubuntu-26.04
+    outputs:
+      rust-version: ${{ steps.versions.outputs.rust-version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-repo
+      - id: versions
+        run: |
+          echo "rust-version=$(mise tool rust --active)" >> "$GITHUB_OUTPUT"
+
   docker-api:
     name: Build API container
     needs: versions
