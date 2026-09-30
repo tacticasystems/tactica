@@ -72,7 +72,7 @@ jobs:
         BIN=tactica-api
         RUST_VERSION=${{ needs.versions.outputs.rust-version }}
       cache: true
-      cache-scope: webhook
+      cache-scope: api
       file: Dockerfile
       meta-images: ghcr.io/${{ github.repository }}-api
       meta-tags: |
@@ -82,11 +82,11 @@ jobs:
         type=ref,event=branch
       output: image
       platforms: linux/amd64,linux/arm64
-      push: "${{ case(github.event_name == 'push', 'true', 'false') }}" # don't push on PRs
-      sbom: true
+      push: "${{ github.event_name == 'push' }}"
+      sbom: "${{ github.event_name == 'push' }}"
       set-meta-annotations: true
       set-meta-labels: true
-      sign: true
+      sign: "${{ github.event_name == 'push' }}"
     secrets:
       registry-auths: |
         - registry: ghcr.io
