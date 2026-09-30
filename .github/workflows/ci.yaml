@@ -19,6 +19,42 @@ env:
   RUST_BACKTRACE: "1"
 
 jobs:
+  changes:
+    name: Detect web changes
+    runs-on: ubuntu-26.04
+    outputs:
+      web: ${{ steps.web.outputs.any_modified }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check changed web files
+        id: web
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: web/**
+          include_all_old_new_renamed_files: true
+
+  web-check:
+    name: Web ${{ matrix.check }}
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [lint, 'fmt:check', audit]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-repo
+        with:
+          rust: 'false'
+      - name: Install web dependencies
+        run: pnpm --dir web install --frozen-lockfile
+      - name: Run web check
+        run: pnpm --dir web ${{ matrix.check }}
+
   fmt:
     runs-on: ubuntu-26.04
     steps:
@@ -52,12 +88,16 @@ jobs:
     runs-on: ubuntu-26.04
     outputs:
       rust-version: ${{ steps.versions.outputs.rust-version }}
+      node-version: ${{ steps.versions.outputs.node-version }}
+      pnpm-version: ${{ steps.versions.outputs.pnpm-version }}
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-repo
       - id: versions
         run: |
           echo "rust-version=$(mise tool rust --active)" >> "$GITHUB_OUTPUT"
+          echo "node-version=$(mise tool node --active)" >> "$GITHUB_OUTPUT"
+          echo "pnpm-version=$(mise tool pnpm --active)" >> "$GITHUB_OUTPUT"
 
   docker-api:
     name: Build API container
@@ -75,6 +115,41 @@ jobs:
       cache-scope: api
       file: Dockerfile
       meta-images: ghcr.io/${{ github.repository }}-api
+      meta-tags: |
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=raw,value=rolling,enable=${{ github.event_name == 'release' }}
+        type=ref,event=branch
+      output: image
+      platforms: linux/amd64,linux/arm64
+      push: "${{ github.event_name == 'push' }}"
+      sbom: "${{ github.event_name == 'push' }}"
+      set-meta-annotations: true
+      set-meta-labels: true
+      sign: "${{ github.event_name == 'push' }}"
+    secrets:
+      registry-auths: |
+        - registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+  docker-web:
+    name: Build Web container
+    needs: versions
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    uses: docker/github-builder/.github/workflows/build.yml@58cb9f5b71b1836d6f690c1e95effdeb9b98cb8a # v1.17.0
+    with:
+      build-args: |
+        NODE_VERSION=${{ needs.versions.outputs.node-version }}
+        PNPM_VERSION=${{ needs.versions.outputs.pnpm-version }}
+      cache: true
+      cache-scope: web
+      context: web
+      file: web/docker/Dockerfile
+      meta-images: ghcr.io/${{ github.repository }}-web
       meta-tags: |
         type=semver,pattern={{version}}
         type=semver,pattern={{major}}.{{minor}}

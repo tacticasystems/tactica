@@ -2,7 +2,7 @@ mod support;
 
 use axum::http::StatusCode;
 use tactica_api_types::v1::{
-    members::{ListMemberRolesResponse, ListMembersResponse},
+    members::{ListMemberRolesResponse, ListMembersResponse, UnitAccessResponse},
     ranks::ListRanksResponse,
     roles::ListRolesResponse,
     units::{ListUnitsResponse, UnitSummary},
@@ -84,6 +84,156 @@ async fn role(api: &ApiFixture, unit_id: UnitId, member_id: MemberId, name: &str
     .await
     .expect("assign role");
     id
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn my_units_are_scoped_to_active_membership_and_paginated() {
+    let api = ApiFixture::new().await;
+    let owner = user(&api, "owner").await;
+    let first = unit(&api, owner, "first").await;
+    let second = unit(&api, owner, "second").await;
+    let outsider = user(&api, "outsider").await;
+    unit(&api, outsider, "foreign").await;
+    let token = api.jwt.generate_jwt_for_user(owner).expect("token");
+    let (status, body) = api.get("/api/v1/auth/me/units?limit=1", Some(&token)).await;
+    assert_eq!(status, StatusCode::OK);
+    let page: ListUnitsResponse = serde_json::from_value(body).expect("units");
+    assert_eq!(page.units.len(), 1);
+    assert_eq!(page.units.first().expect("first unit").id, first.unit.id);
+    let (_, body) = api
+        .get("/api/v1/auth/me/units?offset=1&limit=1", Some(&token))
+        .await;
+    let page: ListUnitsResponse = serde_json::from_value(body).expect("next page");
+    assert_eq!(page.units.first().expect("second unit").id, second.unit.id);
+    UnitMembershipStore::delete(&api.storage, first.owner_membership_id)
+        .await
+        .expect("remove membership");
+    let (_, body) = api.get("/api/v1/auth/me/units", Some(&token)).await;
+    let page: ListUnitsResponse = serde_json::from_value(body).expect("remaining units");
+    assert_eq!(page.units.len(), 1);
+    assert_eq!(
+        page.units.first().expect("remaining unit").id,
+        second.unit.id
+    );
+    assert_eq!(
+        api.get("/api/v1/auth/me/units", None).await.0,
+        StatusCode::UNAUTHORIZED
+    );
+    for query in ["offset=-1", "limit=0", "limit=101"] {
+        assert_eq!(
+            api.get(&format!("/api/v1/auth/me/units?{query}"), Some(&token))
+                .await
+                .0,
+            StatusCode::BAD_REQUEST
+        );
+    }
+    let mut inactive = UserStore::get(&api.storage, owner)
+        .await
+        .expect("user")
+        .expect("exists");
+    inactive.is_active = false;
+    UserStore::update(&api.storage, inactive)
+        .await
+        .expect("deactivate");
+    assert_eq!(
+        api.get("/api/v1/auth/me/units", Some(&token)).await.0,
+        StatusCode::UNAUTHORIZED
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn access_reports_owner_authority_and_current_role_ceiling() {
+    let api = ApiFixture::new().await;
+    let owner = user(&api, "owner").await;
+    let created = unit(&api, owner, "unit").await;
+    let owner_token = api.jwt.generate_jwt_for_user(owner).expect("token");
+    let path = format!("/api/v1/units/{}/access", created.unit.id);
+    let (status, body) = api.get(&path, Some(&owner_token)).await;
+    assert_eq!(status, StatusCode::OK);
+    let access: UnitAccessResponse = serde_json::from_value(body).expect("owner access");
+    assert!(access.is_owner);
+    assert_eq!(access.permissions, 127);
+    assert_eq!(access.highest_role_position, 0);
+    assert_eq!(access.member_id, created.owner_membership_id);
+    let member_user = user(&api, "member").await;
+    let member = UnitMembershipStore::create(
+        &api.storage,
+        NewUnitMembership {
+            id: MemberId::new(),
+            user_id: member_user,
+            unit_id: created.unit.id,
+            rank_id: created.owner_rank_id,
+        },
+    )
+    .await
+    .expect("member");
+    let token = api
+        .jwt
+        .generate_jwt_for_user(member_user)
+        .expect("member token");
+    let role_id = role(&api, created.unit.id, member.id, "Delegated administrator").await;
+    let (_, body) = api.get(&path, Some(&token)).await;
+    let access: UnitAccessResponse = serde_json::from_value(body).expect("delegated access");
+    assert!(!access.is_owner);
+    assert_eq!(access.permissions, 127);
+    assert_eq!(access.highest_role_position, 1);
+    UnitMemberRoleStore::delete(&api.storage, member.id, role_id)
+        .await
+        .expect("revoke role");
+    let (_, body) = api.get(&path, Some(&token)).await;
+    let access: UnitAccessResponse = serde_json::from_value(body).expect("revoked access");
+    assert_eq!(access.permissions, 0);
+    assert_eq!(access.highest_role_position, 0);
+    UnitMembershipStore::delete(&api.storage, member.id)
+        .await
+        .expect("remove membership");
+    assert_eq!(api.get(&path, Some(&token)).await.0, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn roster_exposes_display_fields_without_private_account_fields() {
+    let api = ApiFixture::new().await;
+    let owner = user(&api, "bull").await;
+    let created = unit(&api, owner, "9-rifles").await;
+    let mut record = UserStore::get(&api.storage, owner)
+        .await
+        .expect("user")
+        .expect("exists");
+    record.display_name = Some("Bull".to_owned());
+    record.icon_url = Some("https://example.test/bull.png".to_owned());
+    record.totp_secret = Some("private-auth-field".to_owned());
+    UserStore::update(&api.storage, record)
+        .await
+        .expect("update display fields");
+    let token = api.jwt.generate_jwt_for_user(owner).expect("token");
+    let (_, body) = api
+        .get(
+            &format!("/api/v1/units/{}/members", created.unit.id),
+            Some(&token),
+        )
+        .await;
+    let member = body
+        .get("members")
+        .and_then(serde_json::Value::as_array)
+        .and_then(|items| items.first())
+        .expect("member");
+    assert_eq!(
+        member.get("username").and_then(serde_json::Value::as_str),
+        Some("bull")
+    );
+    assert_eq!(
+        member
+            .get("display_name")
+            .and_then(serde_json::Value::as_str),
+        Some("Bull")
+    );
+    assert_eq!(
+        member.get("icon_url").and_then(serde_json::Value::as_str),
+        Some("https://example.test/bull.png")
+    );
+    for field in ["email", "password_hash", "totp_secret", "is_superuser"] {
+        assert!(member.get(field).is_none());
+    }
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -183,6 +333,9 @@ async fn unit_members_can_read_only_the_requested_units_roster_data() {
     assert_eq!(member.id, first.owner_membership_id);
     assert_eq!(member.user_id, owner);
     assert_eq!(member.rank_id, first.owner_rank_id);
+    assert_eq!(member.username, "owner");
+    assert_eq!(member.display_name, None);
+    assert_eq!(member.icon_url, None);
 
     let (status, body) = api.get(&format!("{base}/ranks"), Some(&token)).await;
     assert_eq!(status, StatusCode::OK);
@@ -317,6 +470,7 @@ async fn roster_reads_require_active_membership_in_the_requested_unit() {
         .expect("missing user token");
     let base = format!("/api/v1/units/{}", first.unit.id);
     let paths = [
+        format!("{base}/access"),
         format!("{base}/members"),
         format!("{base}/ranks"),
         format!("{base}/roles"),

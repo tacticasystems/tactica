@@ -7,7 +7,8 @@ use axum::{
 use tactica_api_types::v1;
 use tactica_auth::principal;
 use tactica_db_model::{
-    CreateUnit, ListPagination, NewUnit, StoreError, UnitFilter, UnitMembershipStore, UnitStore,
+    CreateUnit, ListPagination, NewUnit, StoreError, UnitFilter, UnitMembershipFilter,
+    UnitMembershipStore, UnitStore, UserStore,
 };
 use tactica_uuid_kinds::UnitId;
 
@@ -21,6 +22,60 @@ pub fn router() -> Router<ApiState> {
         .route("/api/v1/units", get(list_units))
         .route("/api/v1/units", post(create_unit))
         .route("/api/v1/units/{unit_id}", get(get_unit))
+        .route("/api/v1/auth/me/units", get(list_my_units))
+}
+
+#[utoipa::path(get, path = "/api/v1/auth/me/units",
+    params(("offset" = Option<i64>, Query), ("limit" = Option<i64>, Query)),
+    responses((status = 200, description = "Units with current membership", body = v1::units::ListUnitsResponse),
+        (status = 400, description = "Invalid pagination"),
+        (status = 401, description = "Authentication required"),
+        (status = 403, description = "User principal required")))]
+async fn list_my_units(
+    Storage(storage): Storage,
+    Principal(principal): Principal,
+    Query(pagination): Query<ListPagination>,
+) -> Result<Json<v1::units::ListUnitsResponse>> {
+    super::common::validate_pagination(&pagination)?;
+    let user_id = super::common::require_user(principal)?;
+    UserStore::get(storage.as_ref(), user_id)
+        .await?
+        .filter(|user| user.is_active)
+        .ok_or_else(|| Error::Unauthorized("User is missing or inactive".to_owned()))?;
+    let memberships = UnitMembershipStore::list(
+        storage.as_ref(),
+        UnitMembershipFilter::default().user_id(vec![user_id]),
+        &pagination,
+    )
+    .await?;
+    if memberships.is_empty() {
+        return Ok(Json(v1::units::ListUnitsResponse { units: Vec::new() }));
+    }
+    let ids = memberships
+        .iter()
+        .map(|member| member.unit_id)
+        .collect::<Vec<_>>();
+    let units = UnitStore::list(
+        storage.as_ref(),
+        UnitFilter::default().id(ids.clone()),
+        &ListPagination::default().limit(100),
+    )
+    .await?;
+    let counts = UnitMembershipStore::count_by_unit(storage.as_ref(), ids).await?;
+    Ok(Json(v1::units::ListUnitsResponse {
+        units: units
+            .into_iter()
+            .map(|unit| v1::units::UnitSummary {
+                id: unit.id,
+                slug: unit.slug,
+                display_name: unit.display_name.unwrap_or_default(),
+                icon_url: unit.icon_url,
+                banner_url: unit.banner_url,
+                biography: unit.biography,
+                member_count: counts.get(&unit.id).copied().unwrap_or_default(),
+            })
+            .collect(),
+    }))
 }
 
 #[utoipa::path(
