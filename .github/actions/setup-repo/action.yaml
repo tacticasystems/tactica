@@ -1,0 +1,41 @@
+---
+name: Setup Repo
+author: Tactica Team
+description: |
+  Configures Mise and sets up language caches.
+
+inputs:
+  bootstrap:
+    description: Enable mise bootstrap
+    default: 'false'
+
+  cache:
+    description: Enable caching
+    default: 'true'
+
+  rust:
+    description: Enable Rust caching
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Set system brew path
+      if: inputs.bootstrap
+      shell: bash
+      run: echo "MISE_SYSTEM_BREW_PREFIX=/tmp/brew" >> "${GITHUB_ENV}"
+
+    - name: Install Mise
+      uses: https://github.com/jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      with:
+        bootstrap: ${{ inputs.bootstrap }}
+        cache: ${{ inputs.cache }}
+        env: true
+        experimental: true
+        export_path: true
+
+    - name: Rust cache
+      uses: https://github.com/dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
+      if: ${{ inputs.cache == 'true' && inputs.rust == 'true' }}
+      with:
+        toolchain: 1.98.1

@@ -1,0 +1,59 @@
+---
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  RUST_BACKTRACE: "1"
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-repo
+      - run: cargo fmt --all -- --check
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-repo
+      - run: cargo build --workspace --all-features
+      - run: cargo nextest run --workspace --all-features --no-fail-fast
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-repo
+      - run: cargo deny --all-features check
+
+  doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-repo
+      - run: cargo doc --workspace --all-features --no-deps
+
+  docker:
+    runs-on: dind
+    strategy:
+      matrix:
+        app: [tactica-api]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-repo
+      - run: mise run build-docker "${{ matrix.app }}"
