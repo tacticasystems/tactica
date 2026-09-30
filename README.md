@@ -16,4 +16,4 @@ mise run check    # run all CI steps
 `check` needs Docker to run the [`testcontainers`](https://testcontainers.com/)
 fixtures.
 
-CI is in Forgejo Actions, in `.forgejo/workflows/`.
+CI is in GitHub Actions, in `.github/workflows/`.
