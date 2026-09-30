@@ -22,14 +22,14 @@ jobs:
   fmt:
     runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-repo
       - run: cargo fmt --all -- --check
 
   test:
     runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-repo
       - run: cargo build --workspace --all-features
       - run: cargo nextest run --workspace --all-features --no-fail-fast
@@ -37,14 +37,14 @@ jobs:
   audit:
     runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-repo
       - run: cargo deny --all-features check
 
   doc:
     runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-repo
       - run: cargo doc --workspace --all-features --no-deps
 
@@ -53,7 +53,7 @@ jobs:
     outputs:
       rust-version: ${{ steps.versions.outputs.rust-version }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-repo
       - id: versions
         run: |
