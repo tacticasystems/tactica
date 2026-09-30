@@ -46,17 +46,17 @@ async fn list_ranks(
         UnitRankFilter::default().unit_id(vec![unit_id]),
         &pagination,
     )
-        .await?
-        .into_iter()
-        .map(|item| RankSummary {
-            id: item.id,
-            unit_id: item.unit_id,
-            slug: item.slug,
-            display_name: item.display_name,
-            icon_url: item.icon_url,
-            description: item.description,
-        })
-        .collect();
+    .await?
+    .into_iter()
+    .map(|item| RankSummary {
+        id: item.id,
+        unit_id: item.unit_id,
+        slug: item.slug,
+        display_name: item.display_name,
+        icon_url: item.icon_url,
+        description: item.description,
+    })
+    .collect();
 
     Ok(Json(ListRanksResponse { ranks }))
 }
