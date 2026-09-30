@@ -148,7 +148,7 @@ jobs:
       cache: true
       cache-scope: web
       context: web
-      file: web/docker/Dockerfile
+      file: docker/Dockerfile
       meta-images: ghcr.io/${{ github.repository }}-web
       meta-tags: |
         type=semver,pattern={{version}}
