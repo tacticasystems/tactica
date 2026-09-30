@@ -5,9 +5,7 @@ no-default-features = false
 [advisories]
 version = 2
 yanked = "deny"
-ignore = [
-  "RUSTSEC-2023-0071"
-]
+ignore = ["RUSTSEC-2023-0071"]
 
 [licenses]
 version = 2

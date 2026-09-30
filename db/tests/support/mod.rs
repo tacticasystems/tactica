@@ -31,12 +31,19 @@ impl DatabaseFixture {
         let pool = tactica_db::PgConnection::new(&database_url)
             .await
             .expect("create PostgreSQL migration pool");
-        let migration_connection = pool.pool().get_owned().await.expect("get migration connection");
+        let migration_connection = pool
+            .pool()
+            .get_owned()
+            .await
+            .expect("get migration connection");
         AsyncMigrationHarness::new(migration_connection)
             .run_pending_migrations(MIGRATIONS)
             .expect("run database migrations");
 
-        Self { _container: container, database_url }
+        Self {
+            _container: container,
+            database_url,
+        }
     }
 
     pub async fn connect(&self) -> tactica_db::PgConnection {

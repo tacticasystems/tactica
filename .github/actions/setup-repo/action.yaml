@@ -37,3 +37,8 @@ runs:
     - name: Rust cache
       uses: Swatinem/rust-cache@v2
       if: ${{ inputs.cache == 'true' && inputs.rust == 'true' }}
+
+    - name: Install missing Rust components
+      if: ${{ inputs.rust == 'true' }}
+      shell: bash
+      run: mise run rust-components
