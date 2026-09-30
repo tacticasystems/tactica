@@ -1,65 +1,62 @@
-import { Textarea } from "../components/ui/textarea";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { useEffect, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useBlocker, useNavigate, useSearch } from "@tanstack/react-router";
-import { Check, LockKeyhole, Plus, Trash2, X } from "lucide-react";
-import { useWorkspace } from "../components/workspace";
-import { EmptyState, ErrorState, LoadingState, PageHeading } from "../components/shared";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../components/ui/alert-dialog";
-import { Button } from "../components/ui/button";
-import {
-  canCreateRole,
-  canDeleteRole,
-  canEditRole,
-  canGrant,
-  permissionDefinitions,
-} from "../lib/permissions";
-import { RoleList } from "../components/role-list";
-import { RoleMembers } from "../components/role-members";
+import { Check, Plus, X } from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { useRoleReorder } from "../hooks/use-role-reorder";
+import { canCreateRole, canDeleteRole } from "../lib/permissions";
 import { errorMessage, queryClient } from "../lib/queries";
-import type { Access, Role, RoleInput } from "../lib/types";
+import type { Role, RoleInput } from "../lib/types";
+
+import { DeleteRoleDialog } from "../components/delete-role-dialog";
+import { EmptyState } from "../components/empty-state";
+import { ErrorState } from "../components/error-state";
+import { LoadingState } from "../components/loading-state";
+import { PageHeading } from "../components/page-heading";
+import { RoleDetails } from "../components/role-details";
+import { RoleEditor } from "../components/role-editor";
+import { RoleList } from "../components/role-list";
+import { Button } from "../components/ui/button";
+import { useWorkspace } from "../components/workspace-context";
 
 export function RolesPage() {
   const { unit, source, queryKey, preview } = useWorkspace();
   const { roleId } = useSearch({ from: "/units/$unitId/roles" });
   const navigate = useNavigate({ from: "/units/$unitId/roles" });
   const selected = roleId ?? null;
+
   const setSelected = (id: string | null) => {
     // Callers either guard the switch or explicitly save/discard the draft.
     void navigate({ search: id ? { roleId: id } : {}, ignoreBlocker: true });
   };
+
   const roles = useQuery({
     queryKey: [...queryKey, "roles"],
     queryFn: ({ signal }) => source.roles(unit.id, signal),
   });
+
   const access = useQuery({
     queryKey: [...queryKey, "access"],
     queryFn: ({ signal }) => source.access(unit.id, signal),
   });
+
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
   const [notice, setNotice] = useState("");
   const [dirty, setDirty] = useState(false);
   const [switchTarget, setSwitchTarget] = useState<string | null>(null);
+
   const defaultId = roles.data?.find((role) => role.kind === "custom")?.id ?? roles.data?.[0]?.id;
   const validSelection = selected === "new" || roles.data?.some((role) => role.id === selected);
+
   const currentId = validSelection ? (selected ?? undefined) : defaultId;
+
   useEffect(() => {
     if (roles.isSuccess && selected && !validSelection) {
       void navigate({ search: {}, replace: true, ignoreBlocker: true });
     }
   }, [roles.isSuccess, selected, validSelection, navigate]);
+
   const blocker = useBlocker({
     shouldBlockFn: ({ current, next }) =>
       dirty &&
@@ -68,7 +65,9 @@ export function RolesPage() {
     enableBeforeUnload: dirty,
     withResolver: true,
   });
+
   const role = roles.data?.find((role) => role.id === currentId);
+
   const select = (id: string) => {
     if (id === currentId) return;
     if (dirty) {
@@ -78,6 +77,7 @@ export function RolesPage() {
     setSelected(id);
     setNotice("");
   };
+
   const save = useMutation({
     mutationFn: ({ roleId, input }: { roleId: string | null; input: RoleInput }) =>
       source.saveRole(unit.id, roleId, input),
@@ -94,6 +94,7 @@ export function RolesPage() {
       void queryClient.invalidateQueries({ queryKey: [...queryKey, "access"] });
     },
   });
+
   const remove = useMutation({
     mutationFn: (target: Role) => source.deleteRole(unit.id, target.id),
     onSuccess: async (_result, target) => {
@@ -118,28 +119,9 @@ export function RolesPage() {
       void queryClient.invalidateQueries({ queryKey: [...queryKey, "access"] });
     },
   });
-  const reorder = useMutation({
-    mutationFn: (roleIds: string[]) => source.reorderRoles(unit.id, roleIds),
-    onMutate: async (roleIds) => {
-      await queryClient.cancelQueries({ queryKey: [...queryKey, "roles"] });
-      const previous = queryClient.getQueryData<Role[]>([...queryKey, "roles"]);
-      const byId = new Map(previous?.map((item) => [item.id, item]));
-      queryClient.setQueryData<Role[]>(
-        [...queryKey, "roles"],
-        roleIds.map((id, index) => ({ ...byId.get(id)!, position: roleIds.length - index - 1 })),
-      );
-      return { previous };
-    },
-    onSuccess: async (updated) => {
-      queryClient.setQueryData([...queryKey, "roles"], updated);
-      await queryClient.invalidateQueries({ queryKey: [...queryKey, "access"] });
-    },
-    onError: (_error, _order, context) => {
-      if (context?.previous) queryClient.setQueryData([...queryKey, "roles"], context.previous);
-      void queryClient.invalidateQueries({ queryKey: [...queryKey, "roles"] });
-      void queryClient.invalidateQueries({ queryKey: [...queryKey, "access"] });
-    },
-  });
+
+  const reorder = useRoleReorder();
+
   const pending = save.isPending || remove.isPending || reorder.isPending;
   if (roles.isPending || access.isPending)
     return (
@@ -148,6 +130,7 @@ export function RolesPage() {
         <LoadingState label="Loading roles and permissions" />
       </>
     );
+
   if (roles.isError || access.isError)
     return (
       <ErrorState
@@ -158,7 +141,9 @@ export function RolesPage() {
         }}
       />
     );
+
   const capabilities = access.data;
+
   return (
     <>
       <PageHeading
@@ -183,14 +168,16 @@ export function RolesPage() {
         <div className="save-notice" role="status">
           <Check size={16} />
           {notice}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             type="button"
             aria-label="Dismiss saved message"
             className="icon-button"
             onClick={() => setNotice("")}
           >
             <X size={15} />
-          </button>
+          </Button>
         </div>
       )}
       {(switchTarget || blocker.status === "blocked") && (
@@ -289,275 +276,15 @@ export function RolesPage() {
           </EmptyState>
         )}
       </div>
-      <AlertDialog
+      <DeleteRoleDialog
         open={deleteOpen}
-        onOpenChange={(open) => {
-          if (!remove.isPending) setDeleteOpen(open);
-        }}
-      >
-        <AlertDialogContent
-          className="delete-role-dialog"
-          aria-busy={remove.isPending}
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            document
-              .querySelector<HTMLButtonElement>(
-                ".delete-role-button:not(:disabled), .role-row.selected:not(:disabled)",
-              )
-              ?.focus();
-          }}
-        >
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete role?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently deletes “{deleteTarget?.display_name}” and removes it from every
-              member. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {remove.isError && (
-            <p role="alert" className="form-error">
-              {errorMessage(remove.error)}
-            </p>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={remove.isPending}>Cancel</AlertDialogCancel>
-            <Button
-              variant="destructive"
-              disabled={
-                remove.isPending || !deleteTarget || !canDeleteRole(capabilities, deleteTarget)
-              }
-              onClick={() => {
-                if (deleteTarget) remove.mutate(deleteTarget);
-              }}
-            >
-              {remove.isPending ? "Deleting…" : "Delete role"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onOpenChange={setDeleteOpen}
+        role={deleteTarget}
+        pending={remove.isPending}
+        error={remove.isError ? errorMessage(remove.error) : ""}
+        canDelete={!!deleteTarget && canDeleteRole(capabilities, deleteTarget)}
+        onDelete={(target) => remove.mutate(target)}
+      />
     </>
-  );
-}
-
-function RoleDetails({
-  role,
-  access,
-  pending,
-  children,
-}: {
-  role?: Role;
-  access: Access;
-  pending: boolean;
-  children: ReactNode;
-}) {
-  const [membersOpen, setMembersOpen] = useState(false);
-  const showMembers = !!role && membersOpen;
-  return (
-    <div className="role-details">
-      {role && (
-        <nav className="role-view-switch" aria-label="Role details">
-          <Button
-            type="button"
-            variant={membersOpen ? "ghost" : "secondary"}
-            aria-pressed={!membersOpen}
-            onClick={() => setMembersOpen(false)}
-          >
-            Permissions
-          </Button>
-          <Button
-            type="button"
-            variant={membersOpen ? "secondary" : "ghost"}
-            aria-pressed={membersOpen}
-            onClick={() => setMembersOpen(true)}
-          >
-            Members
-          </Button>
-        </nav>
-      )}
-      <div hidden={showMembers}>{children}</div>
-      {role && showMembers && (
-        <RoleMembers key={role.id} role={role} access={access} pending={pending} />
-      )}
-    </div>
-  );
-}
-
-function RoleEditor({
-  role,
-  access,
-  pending,
-  error,
-  onSave,
-  onCancel,
-  onDirty,
-  onDelete,
-}: {
-  role?: Role;
-  access: Access;
-  pending: boolean;
-  error: string;
-  onDelete?: () => void;
-  onSave: (input: RoleInput) => void;
-  onCancel: () => void;
-  onDirty: (dirty: boolean) => void;
-}) {
-  const [name, setName] = useState(role?.display_name ?? "");
-  const [description, setDescription] = useState(role?.description ?? "");
-  const [permissions, setPermissions] = useState(role?.permissions ?? 0);
-  const everyone = role?.kind === "everyone";
-  const editable = role ? canEditRole(access, role) : canCreateRole(access);
-  const dirty =
-    name !== (role?.display_name ?? "") ||
-    description !== (role?.description ?? "") ||
-    permissions !== (role?.permissions ?? 0);
-  const update = (nextName: string, nextDescription: string, nextPermissions: number) => {
-    setName(nextName);
-    setDescription(nextDescription);
-    setPermissions(nextPermissions);
-    onDirty(
-      nextName !== (role?.display_name ?? "") ||
-        nextDescription !== (role?.description ?? "") ||
-        nextPermissions !== (role?.permissions ?? 0),
-    );
-  };
-  const reset = () => {
-    update(role?.display_name ?? "", role?.description ?? "", role?.permissions ?? 0);
-    onCancel();
-  };
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (!editable || pending) return;
-    onSave(
-      everyone
-        ? { permissions }
-        : { display_name: name.trim(), description: description.trim() || null, permissions },
-    );
-  };
-  return (
-    <form className="role-editor" onSubmit={submit} aria-busy={pending}>
-      <header className="editor-heading">
-        <div>
-          <h2>{role ? role.display_name : "New role"}</h2>
-          <p>
-            {role
-              ? "Review and edit this role’s access."
-              : "Give the role a name and choose its permissions."}
-          </p>
-        </div>
-        {!editable && (
-          <span className="readonly-label">
-            <LockKeyhole size={14} />
-            Read only
-          </span>
-        )}
-      </header>
-      {!editable && (
-        <p className="access-note">
-          {role?.kind === "administrator"
-            ? "The built-in Administrator role is protected and cannot be edited."
-            : "Your permissions or role position do not allow you to edit this role."}
-        </p>
-      )}
-      {everyone && (
-        <p className="access-note">
-          Everyone applies to all current and future members. Only its permissions can be edited.
-        </p>
-      )}
-      <fieldset disabled={!editable || pending}>
-        <Label htmlFor="role-name">Role name</Label>
-        <Input
-          id="role-name"
-          value={name}
-          onChange={(event) => update(event.target.value, description, permissions)}
-          required
-          maxLength={100}
-          readOnly={everyone}
-        />
-        <Label htmlFor="role-description">
-          Description <span className="optional-label">optional</span>
-        </Label>
-        <Textarea
-          id="role-description"
-          value={description}
-          onChange={(event) => update(name, event.target.value, permissions)}
-          maxLength={2000}
-          rows={3}
-          readOnly={everyone}
-        />
-        <div className="permissions-heading">
-          <h3>Permissions</h3>
-          <p>Ranks do not grant permissions.</p>
-        </div>
-        <div className="permissions-list">
-          {permissionDefinitions.map(({ bit, label, description: help, future }) => {
-            const grantable = canGrant(access, bit) || ((role?.permissions ?? 0) & bit) !== 0;
-            return (
-              <Label className="permission-row" key={bit}>
-                <Input
-                  type="checkbox"
-                  checked={(permissions & bit) !== 0}
-                  disabled={!grantable}
-                  onChange={(event) =>
-                    update(
-                      name,
-                      description,
-                      event.target.checked ? permissions | bit : permissions & ~bit,
-                    )
-                  }
-                />
-                <span>
-                  <strong>
-                    {label}
-                    {future && <small className="planned-label">Planned</small>}
-                  </strong>
-                  <small>
-                    {help}
-                    {!grantable && " You cannot grant this permission."}
-                  </small>
-                </span>
-              </Label>
-            );
-          })}
-        </div>
-      </fieldset>
-      {error && (
-        <p className="form-error" role="alert">
-          {error}
-        </p>
-      )}
-      <footer className="editor-footer">
-        <div className="editor-status">
-          {onDelete && (
-            <Button
-              type="button"
-              variant="outline"
-              className="delete-role-button"
-              disabled={pending}
-              onClick={onDelete}
-            >
-              <Trash2 size={15} />
-              Delete role
-            </Button>
-          )}
-          <span>{dirty ? "Unsaved changes" : role ? "Up to date" : ""}</span>
-        </div>
-        <div className="actions">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={reset}
-            disabled={pending || (!dirty && !!role)}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={!editable || pending || (!dirty && !!role) || !name.trim()}
-          >
-            {pending ? "Saving…" : role ? "Save changes" : "Create role"}
-          </Button>
-        </div>
-      </footer>
-    </form>
   );
 }

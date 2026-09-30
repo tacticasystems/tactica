@@ -10,6 +10,7 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:5173",
     screenshot: "on",
     trace: "on-first-retry",
+    launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH },
   },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },

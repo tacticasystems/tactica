@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -16,10 +15,13 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, LockKeyhole, Shield } from "lucide-react";
+import { useState } from "react";
+
 import { useIsMobile } from "../hooks/use-mobile";
 import { canEditRole, canManageRoles } from "../lib/permissions";
 import { moveRole } from "../lib/role-order";
 import type { Access, Role } from "../lib/types";
+
 import { Button } from "./ui/button";
 
 export function RoleList({
@@ -54,6 +56,7 @@ export function RoleList({
   );
   const roleName = (id: string | number) =>
     roles.find((role) => role.id === id)?.display_name ?? "Role";
+
   return (
     <section className="role-list" aria-label="Unit roles">
       <div className="role-list-heading">
@@ -164,6 +167,7 @@ function SortableRole({
     transition,
     isDragging,
   } = useSortable({ id: role.id, disabled: !enabled });
+
   return (
     <div
       ref={setNodeRef}
