@@ -1343,3 +1343,137 @@ async fn builtin_administrator_is_assignable_and_does_not_define_ownership() {
         StatusCode::OK
     );
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn role_members_are_paginated_scoped_and_include_implicit_everyone() {
+    let api = ApiFixture::new().await;
+    let owner = user(&api, "binding-owner").await;
+    let created = unit(&api, owner, "bindings").await;
+    let other = unit(&api, owner, "other-bindings").await;
+    let token = api.jwt.generate_jwt_for_user(owner).expect("token");
+    let role = create_role(&api, &token, created.unit.id, "Medic").await;
+    let path = format!(
+        "/api/v1/units/{}/roles/{}/members",
+        created.unit.id, role.id
+    );
+    let (status, body) = api.get(&path, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["member_ids"], json!([]));
+
+    let mut member_ids = vec![created.owner_membership_id];
+    for name in ["binding-a", "binding-b"] {
+        let user_id = user(&api, name).await;
+        let member_id = MemberId::new();
+        UnitMembershipStore::create(
+            &api.storage,
+            NewUnitMembership {
+                id: member_id,
+                user_id,
+                unit_id: created.unit.id,
+                rank_id: created.owner_rank_id,
+            },
+        )
+        .await
+        .expect("create member");
+        member_ids.push(member_id);
+    }
+    for member_id in &member_ids {
+        let assignment = format!(
+            "/api/v1/units/{}/members/{member_id}/roles/{}",
+            created.unit.id, role.id
+        );
+        assert_eq!(
+            request(&api, "PUT", &assignment, Some(&token), Value::Null)
+                .await
+                .0,
+            StatusCode::NO_CONTENT
+        );
+    }
+    member_ids.sort();
+    let (status, body) = api
+        .get(&format!("{path}?offset=1&limit=1"), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["member_ids"], json!([member_ids[1]]));
+    let (_, body) = api
+        .get(&format!("{path}?offset=3&limit=1"), Some(&token))
+        .await;
+    assert_eq!(body["member_ids"], json!([]));
+
+    let roles = UnitRoleStore::list(
+        &api.storage,
+        tactica_db_model::UnitRoleFilter::default().unit_id(vec![created.unit.id]),
+        &ListPagination::unlimited(),
+    )
+    .await
+    .expect("roles");
+    let everyone = roles
+        .iter()
+        .find(|role| role.kind == "everyone")
+        .expect("Everyone");
+    let everyone_path = format!(
+        "/api/v1/units/{}/roles/{}/members?limit=100",
+        created.unit.id, everyone.id
+    );
+    let (status, body) = api.get(&everyone_path, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["member_ids"], json!(member_ids));
+    let assignment = format!(
+        "/api/v1/units/{}/members/{}/roles/{}",
+        created.unit.id, member_ids[0], role.id
+    );
+    assert_eq!(
+        request(&api, "DELETE", &assignment, Some(&token), Value::Null)
+            .await
+            .0,
+        StatusCode::NO_CONTENT
+    );
+    let (_, body) = api.get(&path, Some(&token)).await;
+    assert_eq!(body["member_ids"], json!(&member_ids[1..]));
+    let (_, body) = api.get(&everyone_path, Some(&token)).await;
+    assert_eq!(body["member_ids"], json!(member_ids));
+    let (_, body) = api
+        .get(
+            &format!("/api/v1/units/{}/members?limit=100", created.unit.id),
+            Some(&token),
+        )
+        .await;
+    let roster: tactica_api_types::v1::members::ListMembersResponse =
+        serde_json::from_value(body).expect("roster");
+    for member in roster.members {
+        let expected = if member.id == member_ids[0] {
+            vec![everyone.id]
+        } else {
+            vec![role.id, everyone.id]
+        };
+        assert_eq!(member.role_ids, expected);
+    }
+
+    assert_eq!(api.get(&path, None).await.0, StatusCode::UNAUTHORIZED);
+    let outsider = user(&api, "binding-outsider").await;
+    let outsider_token = api.jwt.generate_jwt_for_user(outsider).expect("token");
+    assert_eq!(
+        api.get(&path, Some(&outsider_token)).await.0,
+        StatusCode::FORBIDDEN
+    );
+    let foreign = format!("/api/v1/units/{}/roles/{}/members", other.unit.id, role.id);
+    assert_eq!(
+        api.get(&foreign, Some(&token)).await.0,
+        StatusCode::NOT_FOUND
+    );
+    let missing = format!(
+        "/api/v1/units/{}/roles/{}/members",
+        created.unit.id,
+        RoleId::new()
+    );
+    assert_eq!(
+        api.get(&missing, Some(&token)).await.0,
+        StatusCode::NOT_FOUND
+    );
+    for query in ["offset=-1", "limit=0", "limit=101"] {
+        assert_eq!(
+            api.get(&format!("{path}?{query}"), Some(&token)).await.0,
+            StatusCode::BAD_REQUEST
+        );
+    }
+}

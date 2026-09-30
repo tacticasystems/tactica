@@ -7,7 +7,8 @@ use tactica_api_types::v1::members::{
     ListMemberRolesResponse, ListMembersResponse, MemberSummary, UnitAccessResponse,
 };
 use tactica_db_model::{
-    ListPagination, UnitMembershipFilter, UnitMembershipStore, UnitRoleStore, UserFilter, UserStore,
+    ListPagination, UnitMemberRoleFilter, UnitMemberRoleStore, UnitMembershipFilter,
+    UnitMembershipStore, UnitRoleFilter, UnitRoleStore, UserFilter, UserStore, role_kind,
 };
 use tactica_permissions::{Permission, Permissions};
 use tactica_uuid_kinds::{MemberId, UnitId};
@@ -69,6 +70,33 @@ async fn list_members(
         )
         .await?
     };
+    let roles = UnitRoleStore::list(
+        storage.as_ref(),
+        UnitRoleFilter::default().unit_id(vec![unit_id]),
+        &ListPagination::unlimited(),
+    )
+    .await?;
+    // Load all assignments for this roster page in one batch, including members
+    // whose roles exceed the normal collection page size.
+    let assignments = if memberships.is_empty() {
+        Vec::new()
+    } else {
+        UnitMemberRoleStore::list(
+            storage.as_ref(),
+            UnitMemberRoleFilter::default()
+                .unit_id(vec![unit_id])
+                .member_id(memberships.iter().map(|member| member.id).collect()),
+            &ListPagination::unlimited(),
+        )
+        .await?
+    };
+    let mut assigned = std::collections::HashMap::<_, std::collections::HashSet<_>>::new();
+    for assignment in assignments {
+        assigned
+            .entry(assignment.member_id)
+            .or_default()
+            .insert(assignment.role_id);
+    }
     let members = memberships
         .into_iter()
         .map(|member| {
@@ -84,6 +112,16 @@ async fn list_members(
                 username: user.username.clone(),
                 display_name: user.display_name.clone(),
                 icon_url: user.icon_url.clone(),
+                role_ids: roles
+                    .iter()
+                    .filter(|role| {
+                        role.kind == role_kind::EVERYONE
+                            || assigned
+                                .get(&member.id)
+                                .is_some_and(|ids| ids.contains(&role.id))
+                    })
+                    .map(|role| role.id)
+                    .collect(),
             })
         })
         .collect::<Result<Vec<_>>>()?;

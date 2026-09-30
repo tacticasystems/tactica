@@ -73,7 +73,13 @@ const personnel = createRoute({
   path: "/personnel",
   component: PersonnelPage,
 });
-const roles = createRoute({ getParentRoute: () => unit, path: "/roles", component: RolesPage });
+const roles = createRoute({
+  getParentRoute: () => unit,
+  path: "/roles",
+  component: RolesPage,
+  validateSearch: (search: Record<string, unknown>): { roleId?: string } =>
+    typeof search.roleId === "string" ? { roleId: search.roleId } : {},
+});
 
 const profile = createRoute({
   getParentRoute: () => unit,

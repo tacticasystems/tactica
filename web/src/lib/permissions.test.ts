@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canCreateRole, canDeleteRole, canEditRole, canGrant } from "./permissions";
+import { canAssignRole, canCreateRole, canDeleteRole, canEditRole, canGrant } from "./permissions";
 import type { Access, Role } from "./types";
 
 const access: Access = {
@@ -19,6 +19,26 @@ const role: Role = {
 };
 
 describe("UI role capabilities", () => {
+  it("keeps role assignment independent of role editing and enforces hierarchy", () => {
+    expect(canAssignRole(access, role)).toBe(false);
+    const assigner = { ...access, permissions: 8 };
+    expect(canAssignRole(assigner, role)).toBe(true);
+    expect(canEditRole(assigner, role)).toBe(false);
+    expect(canAssignRole(assigner, { ...role, position: 2 })).toBe(false);
+    expect(canAssignRole(assigner, { ...role, position: 3 })).toBe(false);
+    expect(canAssignRole({ ...assigner, permissions: 1 }, role)).toBe(true);
+    expect(canAssignRole({ ...assigner, permissions: 1 }, { ...role, position: 2 })).toBe(false);
+  });
+  it("lets only the owner assign the top Administrator and never assigns Everyone", () => {
+    const adminRole = { ...role, kind: "administrator" as const, position: 3 };
+    expect(canAssignRole({ ...access, permissions: 127 }, adminRole)).toBe(false);
+    const owner = { ...access, is_owner: true };
+    expect(canAssignRole(owner, adminRole)).toBe(true);
+    expect(canAssignRole(owner, { ...role, kind: "everyone" })).toBe(false);
+    expect(canAssignRole({ ...access, permissions: 127 }, { ...role, kind: "everyone" })).toBe(
+      false,
+    );
+  });
   it("allows deletion only for manageable custom roles", () => {
     expect(canDeleteRole(access, role)).toBe(true);
     expect(canDeleteRole(access, { ...role, position: 2 })).toBe(false);

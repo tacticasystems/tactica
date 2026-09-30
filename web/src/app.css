@@ -482,7 +482,35 @@ svg {
   background: #f8f6fb;
 }
 .roster-table th:first-child {
-  width: 55%;
+  width: 40%;
+}
+.member-role-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 100px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.role-pill {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--selection);
+  color: var(--brand-ink);
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  max-width: 24ch;
+}
+a.role-pill:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a.role-pill:focus-visible {
+  outline: 2px solid var(--brand-ink);
+  outline-offset: 2px;
 }
 .roster-table td {
   padding: 15px 20px;
@@ -690,6 +718,59 @@ svg {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 25px 28px 0;
+}
+.role-details {
+  min-width: 0;
+}
+.role-view-switch {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.role-editor.role-members {
+  padding-bottom: 24px;
+}
+.role-members .editor-heading {
+  flex-wrap: wrap;
+}
+.role-member-search {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 18px;
+}
+.role-member-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.role-member-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+.role-member-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.role-member-identity strong,
+.role-member-identity small {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.role-member-identity small,
+.role-member-empty {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.role-member-empty {
+  padding: 20px 0;
 }
 .editor-heading {
   display: flex;
@@ -1082,7 +1163,7 @@ fieldset {
     padding: 13px 12px;
   }
   .roster-table th:first-child {
-    width: 50%;
+    width: 35%;
   }
   .member-name {
     gap: 9px;
@@ -1116,6 +1197,7 @@ fieldset {
     gap: 20px;
   }
   .role-list,
+  .role-details,
   .role-editor {
     width: 100%;
   }

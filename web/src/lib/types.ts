@@ -28,6 +28,7 @@ export interface Member {
   username: string;
   display_name: string | null;
   icon_url: string | null;
+  role_ids: string[];
 }
 
 export interface Rank {
@@ -68,6 +69,9 @@ export interface UnitDataSource {
   ranks(id: string, signal?: AbortSignal): Promise<Rank[]>;
   roles(id: string, signal?: AbortSignal): Promise<Role[]>;
   access(id: string, signal?: AbortSignal): Promise<Access>;
+  allMembers(id: string, signal?: AbortSignal): Promise<Member[]>;
+  roleMembers(unitId: string, roleId: string, signal?: AbortSignal): Promise<string[]>;
+  setRoleMember(unitId: string, roleId: string, memberId: string, assigned: boolean): Promise<void>;
   saveRole(unitId: string, roleId: string | null, input: RoleInput): Promise<Role>;
   deleteRole(unitId: string, roleId: string): Promise<void>;
   /** Role IDs in display order, highest first. */

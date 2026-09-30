@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tactica_uuid_kinds::{RoleId, UnitId};
+use tactica_uuid_kinds::{MemberId, RoleId, UnitId};
 
 pub use tactica_permissions::{Permission, Permissions};
 
@@ -20,6 +20,13 @@ pub struct RoleSummary {
 #[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 pub struct ListRolesResponse {
     pub roles: Vec<RoleSummary>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
+pub struct ListRoleMembersResponse {
+    /// Membership IDs; Everyone includes all current unit members.
+    pub member_ids: Vec<MemberId>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
