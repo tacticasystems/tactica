@@ -13,82 +13,72 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  CARGO_TERM_COLOR: always
-  CARGO_INCREMENTAL: "0"
-  RUST_BACKTRACE: "1"
-
 jobs:
-  fmt:
-    runs-on: ubuntu-26.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: ./.github/actions/setup-repo
-      - run: cargo fmt --all -- --check
-
-  test:
-    runs-on: ubuntu-26.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: ./.github/actions/setup-repo
-      - run: cargo build --workspace --all-features
-      - run: cargo nextest run --workspace --all-features --no-fail-fast
-
-  audit:
-    runs-on: ubuntu-26.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: ./.github/actions/setup-repo
-      - run: cargo deny --all-features check
-
-  doc:
-    runs-on: ubuntu-26.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: ./.github/actions/setup-repo
-      - run: cargo doc --workspace --all-features --no-deps
-
-  versions:
+  changes:
+    name: Detect section changes
     runs-on: ubuntu-26.04
     outputs:
-      rust-version: ${{ steps.versions.outputs.rust-version }}
+      shared: ${{ steps.shared.outputs.any_modified }}
+      rust: ${{ steps.rust.outputs.any_modified }}
+      web: ${{ steps.web.outputs.any_modified }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: ./.github/actions/setup-repo
-      - id: versions
-        run: |
-          echo "rust-version=$(mise tool rust --active)" >> "$GITHUB_OUTPUT"
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
-  docker-api:
-    name: Build API container
-    needs: versions
+      - name: Check changed shared files
+        id: shared
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            .github/workflows/ci.yaml
+            .mise/config.toml
+            .mise/mise.lock
+          include_all_old_new_renamed_files: true
+
+      - name: Check changed web files
+        id: web
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            .github/workflows/web.yaml
+            web/**
+          include_all_old_new_renamed_files: true
+
+      - name: Check changed rust files
+        id: rust
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            .github/workflows/rust.yaml
+            .taplo.toml
+            crates/**
+            Dockerfile
+            Cargo.toml
+            Cargo.lock
+            clippy.toml
+            deny.toml
+            rust-toolchain.toml
+            typos.toml
+          include_all_old_new_renamed_files: true
+
+  rust:
+    name: Rust
+    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.rust == 'true'
+    needs: changes
     permissions:
       contents: read
       id-token: write
       packages: write
-    uses: docker/github-builder/.github/workflows/build.yml@58cb9f5b71b1836d6f690c1e95effdeb9b98cb8a # v1.17.0
-    with:
-      build-args: |
-        BIN=tactica-api
-        RUST_VERSION=${{ needs.versions.outputs.rust-version }}
-      cache: true
-      cache-scope: api
-      file: Dockerfile
-      meta-images: ghcr.io/${{ github.repository }}-api
-      meta-tags: |
-        type=semver,pattern={{version}}
-        type=semver,pattern={{major}}.{{minor}}
-        type=raw,value=rolling,enable=${{ github.event_name == 'release' }}
-        type=ref,event=branch
-      output: image
-      platforms: linux/amd64,linux/arm64
-      push: "${{ github.event_name == 'push' }}"
-      sbom: "${{ github.event_name == 'push' }}"
-      set-meta-annotations: true
-      set-meta-labels: true
-      sign: "${{ github.event_name == 'push' }}"
-    secrets:
-      registry-auths: |
-        - registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+    uses: ./.github/workflows/rust.yaml
+
+  web:
+    name: Web
+    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.web == 'true'
+    needs: changes
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    uses: ./.github/workflows/web.yaml

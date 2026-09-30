@@ -1,0 +1,111 @@
+---
+name: Web CI
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit web dependencies
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup-repo
+        with:
+          rust: 'false'
+          pnpm: 'true'
+      - run: pnpm --dir web audit
+
+  lint:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup-repo
+        with:
+          rust: 'false'
+          pnpm: 'true'
+      - run: pnpm --dir web run lint
+
+  fmt:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup-repo
+        with:
+          rust: 'false'
+          pnpm: 'true'
+      - run: pnpm --dir web run fmt:check
+
+  test:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup-repo
+        with:
+          rust: 'false'
+          pnpm: 'true'
+      - run: pnpm --dir web run test
+
+  build:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup-repo
+        with:
+          rust: 'false'
+          pnpm: 'true'
+      - run: pnpm --dir web run typecheck
+      - run: pnpm --dir web run build
+
+  versions:
+    runs-on: ubuntu-26.04
+    outputs:
+      node-version: ${{ steps.versions.outputs.node-version }}
+      pnpm-version: ${{ steps.versions.outputs.pnpm-version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup-repo
+        with:
+          rust: 'false'
+      - id: versions
+        run: |
+          echo "node-version=$(mise tool node --active)" >> "$GITHUB_OUTPUT"
+          echo "pnpm-version=$(mise tool pnpm --active)" >> "$GITHUB_OUTPUT"
+
+  docker-web:
+    name: Build Web container
+    needs: versions
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    uses: docker/github-builder/.github/workflows/build.yml@58cb9f5b71b1836d6f690c1e95effdeb9b98cb8a # v1.17.0
+    with:
+      build-args: |
+        NODE_VERSION=${{ needs.versions.outputs.node-version }}
+        PNPM_VERSION=${{ needs.versions.outputs.pnpm-version }}
+      cache: true
+      cache-scope: web
+      context: web
+      file: docker/Dockerfile
+      meta-images: ghcr.io/${{ github.repository }}-web
+      meta-tags: |
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=raw,value=rolling,enable=${{ github.event_name == 'release' }}
+        type=ref,event=branch
+      output: image
+      platforms: linux/amd64,linux/arm64
+      push: "${{ github.event_name == 'push' }}"
+      sbom: "${{ github.event_name == 'push' }}"
+      set-meta-annotations: true
+      set-meta-labels: true
+      sign: "${{ github.event_name == 'push' }}"
+    secrets:
+      registry-auths: |
+        - registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}

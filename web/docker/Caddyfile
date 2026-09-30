@@ -1,0 +1,31 @@
+# Clear global configurations (optional port tweak)
+http://:8090 {
+  # Set the root directory where the built frontend files live
+  root * /var/www/html
+
+  # Enable compression for faster asset delivery
+  encode gzip zstd
+
+  # Handle client-side routing for TanStack Router:
+  # 1. Look for an exact match ($uri)
+  # 2. Look for a directory ($uri/)
+  # 3. Fall back to the index.html file to let the router take over
+  try_files {path} {path}/ /index.html
+
+  # Serve files matching the root directory path
+  file_server
+
+  # Set security headers
+  header {
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "strict-origin-when-cross-origin"
+  }
+
+  # Optional: Cache static assets aggressively
+  @static {
+    file
+    path *.js *.css *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff2
+  }
+  header @static Cache-Control "public, max-age=31536000, immutable"
+}
