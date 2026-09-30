@@ -9,29 +9,40 @@ ARG BIN=tactica-api
 ARG TARGETARCH
 WORKDIR /src
 
-COPY . .
+COPY Cargo.lock Cargo.toml ./
+COPY crates crates
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry,id=cargo-registry-${TARGETARCH}},sharing=locked \
     --mount=type=cache,target=/src/target,id=cargo-target-${TARGETARCH}},sharing=locked \
-    cargo build --release --locked --bin "${BIN}" && \
-    cp "target/release/${BIN}" "/usr/local/bin/${BIN}"
+    RUSTFLAGS="-C target-feature=+crt-static" \
+    cargo build --release --locked --bin="${BIN}" --target="$(case ${TARGETARCH} in \
+      "amd64") echo "x86_64";; \
+      "arm64") echo "aarch64";; \
+      *) echo "${TARGETARCH}";; \
+    esac)-unknown-linux-gnu" && \
+    cp "target/$(case ${TARGETARCH} in \
+      "amd64") echo "x86_64";; \
+      "arm64") echo "aarch64";; \
+      *) echo "${TARGETARCH}";; \
+    esac)-unknown-linux-gnu/release/${BIN}" "/usr/local/bin/${BIN}"
 
-FROM debian:trixie-slim AS runtime
+FROM rockylinux/rockylinux:10-ubi-micro AS runtime
 ARG BIN=tactica-api
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl tini \
-    && rm -rf /var/lib/apt/lists/* \
-    && groupadd --gid 10001 tactica \
-    && useradd --uid 10001 --gid tactica --no-create-home --shell /usr/sbin/nologin tactica
+# renovate: datasource=github-releases depName=krallin/tini
+ENV TINI_VERSION=v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /usr/local/bin/tini
+
+RUN echo 'tactica:x:10001:10001::/:/sbin/nologin' >> /etc/passwd \
+  && echo 'tactica:x:10001:' >> /etc/group \
+	&& chmod +x /usr/local/bin/tini
 
 COPY --from=builder --chown=10001:10001 /usr/local/bin/${BIN} /usr/local/bin/${BIN}
 
 RUN echo "#!/usr/bin/env bash" > /usr/local/bin/entrypoint && \
-  echo "exec /usr/bin/tini -- /usr/local/bin/${BIN} \"\${@}\"" >> /usr/local/bin/entrypoint && \
+  echo "exec /usr/local/bin/tini -- /usr/local/bin/${BIN} \"\${@}\"" >> /usr/local/bin/entrypoint && \
   chmod +x /usr/local/bin/entrypoint
 
-LABEL org.opencontainers.image.source="https://git.hayden.moe/tactica/tactica"
 USER 10001:10001
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
