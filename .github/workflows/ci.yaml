@@ -50,6 +50,7 @@ jobs:
       - uses: ./.github/actions/setup-repo
         with:
           rust: 'false'
+          pnpm: 'true'
       - name: Install web dependencies
         run: pnpm --dir web install --frozen-lockfile
       - name: Run web check
