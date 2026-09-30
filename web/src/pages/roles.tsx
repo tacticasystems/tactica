@@ -1,10 +1,10 @@
 import { Textarea } from "../components/ui/textarea";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useBlocker, useNavigate, useSearch } from "@tanstack/react-router";
 import { Check, LockKeyhole, Plus, Trash2, X } from "lucide-react";
 import { useWorkspace } from "../components/workspace";
 import { EmptyState, ErrorState, LoadingState, PageHeading } from "../components/shared";
@@ -36,7 +36,8 @@ export function RolesPage() {
   const navigate = useNavigate({ from: "/units/$unitId/roles" });
   const selected = roleId ?? null;
   const setSelected = (id: string | null) => {
-    void navigate({ search: id ? { roleId: id } : {} });
+    // Callers either guard the switch or explicitly save/discard the draft.
+    void navigate({ search: id ? { roleId: id } : {}, ignoreBlocker: true });
   };
   const roles = useQuery({
     queryKey: [...queryKey, "roles"],
@@ -51,8 +52,22 @@ export function RolesPage() {
   const [notice, setNotice] = useState("");
   const [dirty, setDirty] = useState(false);
   const [switchTarget, setSwitchTarget] = useState<string | null>(null);
-  const currentId =
-    selected ?? roles.data?.find((role) => role.kind === "custom")?.id ?? roles.data?.[0]?.id;
+  const defaultId = roles.data?.find((role) => role.kind === "custom")?.id ?? roles.data?.[0]?.id;
+  const validSelection = selected === "new" || roles.data?.some((role) => role.id === selected);
+  const currentId = validSelection ? (selected ?? undefined) : defaultId;
+  useEffect(() => {
+    if (roles.isSuccess && selected && !validSelection) {
+      void navigate({ search: {}, replace: true, ignoreBlocker: true });
+    }
+  }, [roles.isSuccess, selected, validSelection, navigate]);
+  const blocker = useBlocker({
+    shouldBlockFn: ({ current, next }) =>
+      dirty &&
+      (current.pathname !== next.pathname ||
+        ("roleId" in next.search ? next.search.roleId : defaultId) !== currentId),
+    enableBeforeUnload: dirty,
+    withResolver: true,
+  });
   const role = roles.data?.find((role) => role.id === currentId);
   const select = (id: string) => {
     if (id === currentId) return;
@@ -176,14 +191,19 @@ export function RolesPage() {
           </button>
         </div>
       )}
-      {switchTarget && (
+      {(switchTarget || blocker.status === "blocked") && (
         <div className="unsaved-prompt" role="alert">
-          <p>You have unsaved changes. Discard them to open another role?</p>
+          <p>
+            {blocker.status === "blocked" && blocker.next.pathname !== blocker.current.pathname
+              ? "You have unsaved changes. Discard them to leave this page?"
+              : "You have unsaved changes. Discard them to open another role?"}
+          </p>
           <div className="actions">
             <Button
               variant="outline"
               onClick={() => {
-                setSelected(switchTarget);
+                if (blocker.status === "blocked") blocker.proceed();
+                else setSelected(switchTarget);
                 setSwitchTarget(null);
                 setDirty(false);
                 save.reset();
@@ -191,7 +211,13 @@ export function RolesPage() {
             >
               Discard changes
             </Button>
-            <Button variant="ghost" onClick={() => setSwitchTarget(null)}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (blocker.status === "blocked") blocker.reset();
+                setSwitchTarget(null);
+              }}
+            >
               Keep editing
             </Button>
           </div>

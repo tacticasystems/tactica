@@ -53,6 +53,7 @@ export function RoleMembers({
       void queryClient.invalidateQueries({ queryKey: bindingKey });
       void queryClient.invalidateQueries({ queryKey: [...queryKey, "access"] });
       void queryClient.invalidateQueries({ queryKey: [...queryKey, "roles"] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKey, "members"] });
     },
   });
   const manageable = canAssignRole(access, role);

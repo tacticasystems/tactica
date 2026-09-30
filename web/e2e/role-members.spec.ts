@@ -25,7 +25,7 @@ async function workspace(page: Page, permissions = 8, owner = false) {
   ].map((role) => ({ ...role, unit_id: "unit", description: null }));
   const ids = new Set<string>();
   const writes: string[] = [];
-  const state = { denied: false, failRead: false, assignedRoleId: "medic" };
+  const state = { denied: false, failRead: false, assignedRoleId: "medic", loseResponse: false };
   await page.addInitScript(() => {
     localStorage.setItem(
       "tactica.session.v1",
@@ -87,6 +87,10 @@ async function workspace(page: Page, permissions = 8, owner = false) {
       const memberId = path.split("/")[4];
       if (request.method() === "PUT") ids.add(memberId);
       else ids.delete(memberId);
+      if (state.loseResponse) {
+        await route.abort("failed");
+        return;
+      }
       await route.fulfill({ status: 204 });
       return;
     } else throw new Error(`Unexpected API request: ${request.method()} ${path}`);
@@ -264,3 +268,75 @@ test("permission drafts survive switching between Permissions and Members", asyn
     page.getByText("You have unsaved changes. Discard them to open another role?"),
   ).toBeVisible();
 });
+
+for (const direction of ["back", "forward"] as const) {
+  test(`dirty role drafts survive browser ${direction} until discarded`, async ({ page }) => {
+    await workspace(page, 127, true);
+    await page.getByRole("button", { name: "Permissions", exact: true }).click();
+    await page.getByRole("button", { name: "New role", exact: true }).click();
+    await expect(page).toHaveURL(/roleId=new$/);
+    if (direction === "forward") {
+      await page.goBack();
+      await expect(page.getByRole("heading", { name: "Medic", exact: true })).toBeVisible();
+    }
+    const name = page.getByRole("textbox", { name: "Role name", exact: true });
+    await name.fill("Unsaved draft");
+    await page.evaluate((direction) => window.history[direction](), direction);
+    await expect(page.getByRole("alert")).toContainText("You have unsaved changes");
+    await expect(name).toHaveValue("Unsaved draft");
+    await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    await expect(name).toHaveValue("Unsaved draft");
+    await page.evaluate((direction) => window.history[direction](), direction);
+    await page.getByRole("button", { name: "Discard changes", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: direction === "back" ? "Medic" : "New role", exact: true }),
+    ).toBeVisible();
+    await expect(name).toHaveValue(direction === "back" ? "Medic" : "");
+  });
+}
+
+test("stale role links fall back to an existing role and clear the search parameter", async ({
+  page,
+}) => {
+  await workspace(page);
+  await page.goto("/units/unit/roles?roleId=deleted-role");
+  await expect(page.getByRole("heading", { name: "Medic", exact: true })).toBeVisible();
+  await expect(page).toHaveURL("http://127.0.0.1:5173/units/unit/roles");
+});
+
+for (const initiallyAssigned of [false, true]) {
+  test(`roster pills refresh after a committed ${initiallyAssigned ? "removal" : "assignment"} loses its response`, async ({
+    page,
+  }, testInfo) => {
+    const { ids, state } = await workspace(page);
+    if (initiallyAssigned) ids.add("member-0");
+    await page.goto("/units/unit/personnel");
+    const pills = page
+      .getByRole("list", { name: "Person 0 roles", exact: true })
+      .getByRole("listitem");
+    await expect(pills).toHaveCount(initiallyAssigned ? 1 : 0);
+    if (testInfo.project.name === "mobile")
+      await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
+    await page.getByRole("link", { name: "Roles", exact: true }).click();
+    await page.getByRole("button", { name: "Members", exact: true }).click();
+    state.loseResponse = true;
+    if (initiallyAssigned) {
+      await page.getByRole("button", { name: "Remove Person 0 from Medic", exact: true }).click();
+    } else {
+      await page.getByRole("button", { name: "Add members", exact: true }).click();
+      await page.getByRole("searchbox").fill("user-0");
+      await page.getByRole("button", { name: "Add Person 0 to Medic", exact: true }).click();
+    }
+    await expect(page.getByRole("alert")).toContainText("Check your connection");
+    await expect(
+      page.getByText(initiallyAssigned ? "0 members have this role." : "1 member has this role.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    if (testInfo.project.name === "mobile")
+      await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
+    await page.getByRole("link", { name: "Personnel", exact: true }).click();
+    await expect(pills).toHaveCount(initiallyAssigned ? 0 : 1);
+  });
+}
