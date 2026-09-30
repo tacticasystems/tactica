@@ -22,7 +22,7 @@ jobs:
       matrix:
         check: [lint, 'fmt:check', audit]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-repo
         with:
           rust: 'false'
@@ -38,7 +38,7 @@ jobs:
       node-version: ${{ steps.versions.outputs.node-version }}
       pnpm-version: ${{ steps.versions.outputs.pnpm-version }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-repo
         with:
           rust: 'false'

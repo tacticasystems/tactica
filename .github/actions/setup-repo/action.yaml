@@ -62,7 +62,7 @@ runs:
           ${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.pnpm-store.outputs.pnpm-version }}-node-${{ steps.pnpm-store.outputs.node-version }}-
 
     - name: Rust cache
-      uses: Swatinem/rust-cache@v2
+      uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       if: ${{ inputs.cache == 'true' && inputs.rust == 'true' }}
 
     - name: Install missing Rust components
