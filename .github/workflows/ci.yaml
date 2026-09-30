@@ -48,12 +48,36 @@ jobs:
       - uses: ./.github/actions/setup-repo
       - run: cargo doc --workspace --all-features --no-deps
 
-  docker:
-    runs-on: dind
-    strategy:
-      matrix:
-        app: [tactica-api]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup-repo
-      - run: mise run build-docker "${{ matrix.app }}"
+  docker-api:
+    name: Build API container
+    needs: versions
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    uses: docker/github-builder/.github/workflows/build.yml@58cb9f5b71b1836d6f690c1e95effdeb9b98cb8a # v1.17.0
+    with:
+      build-args: |
+        BIN=tactica-api
+        RUST_VERSION=${{ needs.versions.outputs.rust-version }}
+      cache: true
+      cache-scope: webhook
+      file: Dockerfile
+      meta-images: ghcr.io/${{ github.repository }}-api
+      meta-tags: |
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=raw,value=rolling,enable=${{ github.event_name == 'release' }}
+        type=ref,event=branch
+      output: image
+      platforms: linux/amd64,linux/arm64
+      push: "${{ case(github.event_name == 'push', 'true', 'false') }}" # don't push on PRs
+      sbom: true
+      set-meta-annotations: true
+      set-meta-labels: true
+      sign: true
+    secrets:
+      registry-auths: |
+        - registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
