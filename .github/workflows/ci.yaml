@@ -40,6 +40,7 @@ jobs:
     uses: ./.github/workflows/rust.yaml
 
   web:
+    if: needs.changes.outputs.web
     name: Web
     needs: changes
     permissions:
@@ -47,5 +48,3 @@ jobs:
       id-token: write
       packages: write
     uses: ./.github/workflows/web.yaml
-    with:
-      run-checks: ${{ needs.changes.outputs.web == 'true' }}

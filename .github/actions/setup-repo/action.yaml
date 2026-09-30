@@ -69,3 +69,8 @@ runs:
       if: ${{ inputs.rust == 'true' }}
       shell: bash
       run: mise run rust-components
+
+    - name: Install PNPM packages
+      if: ${{ inputs.pnpm == 'true' }}
+      shell: bash
+      run: pnpm --dir web install --frozen-lockfile
