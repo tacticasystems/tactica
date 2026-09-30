@@ -1,0 +1,5 @@
+# Default codeowner is the Tactica SIG
+* @tacticasystems/sig-tactica
+
+# Tactica SIG Admins are required to approve changes to CODEOWNERS
+/.github/CODEOWNERS @tacticasystems/sig-tactica-admins
