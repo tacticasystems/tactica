@@ -82,6 +82,7 @@
     },
 	],
 
+  minimumReleaseAge: "3 days",
   timezone: 'Europe/London',
   labels: ['dependencies'],
   commitBodyTable: true,
