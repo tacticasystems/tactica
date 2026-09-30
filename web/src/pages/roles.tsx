@@ -113,6 +113,8 @@ export function RolesPage() {
       ]);
     },
     onError: () => {
+      void queryClient.invalidateQueries({ queryKey: [...queryKey, "roles"] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKey, "members"] });
       void queryClient.invalidateQueries({ queryKey: [...queryKey, "access"] });
     },
   });

@@ -78,6 +78,16 @@ async function workspace(page: Page, permissions = 8, owner = false) {
             : []
         ).slice(offset, offset + limit),
       };
+    } else if (/^\/units\/unit\/roles\/[^/]+$/.test(path) && request.method() === "DELETE") {
+      const roleId = path.split("/")[4];
+      roles.splice(
+        roles.findIndex((role) => role.id === roleId),
+        1,
+      );
+      ids.clear();
+      if (state.loseResponse) await route.abort("failed");
+      else await route.fulfill({ status: 204 });
+      return;
     } else if (/\/members\/[^/]+\/roles\/[^/]+$/.test(path)) {
       writes.push(`${request.method()} ${path}`);
       if (state.denied) {
@@ -303,6 +313,36 @@ test("stale role links fall back to an existing role and clear the search parame
   await page.goto("/units/unit/roles?roleId=deleted-role");
   await expect(page.getByRole("heading", { name: "Medic", exact: true })).toBeVisible();
   await expect(page).toHaveURL("http://127.0.0.1:5173/units/unit/roles");
+});
+
+test("role and roster caches refresh after a committed deletion loses its response", async ({
+  page,
+}, testInfo) => {
+  const { ids, state } = await workspace(page, 127, true);
+  ids.add("member-0");
+  await page.goto("/units/unit/personnel");
+  const pills = page
+    .getByRole("list", { name: "Person 0 roles", exact: true })
+    .getByRole("listitem");
+  await expect(pills).toHaveCount(1);
+  if (testInfo.project.name === "mobile")
+    await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
+  await page.getByRole("link", { name: "Roles", exact: true }).click();
+  await page.getByRole("button", { name: "Permissions", exact: true }).click();
+  state.loseResponse = true;
+  await page.getByRole("button", { name: "Delete role", exact: true }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Delete role", exact: true })
+    .click();
+  await expect(page.getByRole("alertdialog")).toContainText("Check your connection");
+  await page.getByRole("alertdialog").getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Medic", exact: true })).toHaveCount(0);
+  await expect(page.locator(".role-row").filter({ hasText: "Medic" })).toHaveCount(0);
+  if (testInfo.project.name === "mobile")
+    await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
+  await page.getByRole("link", { name: "Personnel", exact: true }).click();
+  await expect(pills).toHaveCount(0);
 });
 
 for (const initiallyAssigned of [false, true]) {
