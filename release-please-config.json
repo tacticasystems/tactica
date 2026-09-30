@@ -1,33 +1,27 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "separate-pull-requests": true,
+  "release-type": "rust",
+  "plugins": ["cargo-workspace"],
+  "separate-pull-requests": false,
   "include-component-in-tag": true,
   "tag-separator": "-",
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": true,
   "packages": {
-    ".": {
-      "release-type": "simple",
-      "component": "rust",
-      "version-file": "version.txt",
-      "exclude-paths": ["web"],
-      "extra-files": [
-        {
-          "type": "toml",
-          "path": "crates/**/Cargo.toml",
-          "glob": true,
-          "jsonpath": "$.package.version"
-        },
-        {
-          "type": "toml",
-          "path": "Cargo.lock",
-          "jsonpath": "$.package[?(!@.source)].version"
-        }
-      ]
+    "crates/api": {
+      "component": "tactica-api"
     },
+    "crates/api/types": {},
+    "crates/db": {},
+    "crates/db/schema": {},
+    "crates/db/model": {},
+    "crates/uuid-kinds": {},
+    "crates/auth": {},
+    "crates/permissions": {},
     "web": {
       "release-type": "node",
-      "component": "web"
+      "component": "web",
+      "separate-pull-requests": true
     }
   }
 }

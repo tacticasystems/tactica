@@ -1,4 +1,11 @@
 {
-  ".": "0.1.0",
+  "crates/api": "0.1.0",
+  "crates/api/types": "0.1.0",
+  "crates/db": "0.1.0",
+  "crates/db/schema": "0.1.0",
+  "crates/db/model": "0.1.0",
+  "crates/uuid-kinds": "0.1.0",
+  "crates/auth": "0.1.0",
+  "crates/permissions": "0.1.0",
   "web": "0.1.0"
 }
