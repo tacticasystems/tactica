@@ -49,6 +49,30 @@ jobs:
           pnpm: 'true'
       - run: pnpm --dir web run test
 
+  e2e:
+    name: E2E (desktop and mobile)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup-repo
+        with:
+          rust: 'false'
+          pnpm: 'true'
+      - name: Install Chromium and system dependencies
+        run: pnpm --dir web exec playwright install --with-deps chromium
+      - name: Run E2E tests
+        run: pnpm --dir web run test:e2e
+      - name: Upload Playwright results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-results
+          path: |
+            web/playwright-report/
+            web/test-results/
+          retention-days: 14
+
   build:
     runs-on: ubuntu-26.04
     steps:
