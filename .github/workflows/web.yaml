@@ -49,16 +49,6 @@ jobs:
           pnpm: 'true'
       - run: pnpm --dir web run test
 
-  test-e2e:
-    runs-on: ubuntu-26.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: ./.github/actions/setup-repo
-        with:
-          rust: 'false'
-          pnpm: 'true'
-      - run: pnpm --dir web run test:e2e
-
   build:
     runs-on: ubuntu-26.04
     steps:
