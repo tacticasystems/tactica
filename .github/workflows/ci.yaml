@@ -15,24 +15,58 @@ concurrency:
 
 jobs:
   changes:
-    name: Detect web changes
+    name: Detect section changes
     runs-on: ubuntu-26.04
     outputs:
+      shared: ${{ steps.shared.outputs.any_modified }}
+      rust: ${{ steps.rust.outputs.any_modified }}
       web: ${{ steps.web.outputs.any_modified }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Check changed shared files
+        id: web
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            .github/workflows/ci.yaml
+            .mise/config.toml
+            .mise/mise.lock
+          include_all_old_new_renamed_files: true
+
       - name: Check changed web files
         id: web
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
-          files: web/**
+          files: |
+            .github/workflows/web.yaml
+            web/**
+          include_all_old_new_renamed_files: true
+
+      - name: Check changed rust files
+        id: rust
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            .github/workflows/rust.yaml
+            .taplo.toml
+            crates/**
+            Dockerfile
+            Cargo.toml
+            Cargo.lock
+            clippy.toml
+            deny.toml
+            rust-toolchain.toml
+            typos.toml
           include_all_old_new_renamed_files: true
 
   rust:
     name: Rust
+    if: needs.changes.outputs.shared || needs.changes.outputs.rust
+    needs: changes
     permissions:
       contents: read
       id-token: write
@@ -40,8 +74,8 @@ jobs:
     uses: ./.github/workflows/rust.yaml
 
   web:
-    if: needs.changes.outputs.web
     name: Web
+    if: needs.changes.outputs.shared || needs.changes.outputs.web
     needs: changes
     permissions:
       contents: read

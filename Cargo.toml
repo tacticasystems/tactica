@@ -2,18 +2,18 @@
 resolver = "3"
 members = [
   # service crates
-  "api",
-  "api/types",
+  "crates/api",
+  "crates/api/types",
 
   # db crates
-  "db",
-  "db/schema",
-  "db/model",
+  "crates/db",
+  "crates/db/schema",
+  "crates/db/model",
 
   # utility crates
-  "uuid-kinds",
-  "auth",
-  "permissions",
+  "crates/uuid-kinds",
+  "crates/auth",
+  "crates/permissions",
 ]
 
 [workspace.package]
@@ -132,10 +132,10 @@ tracing-subscriber = { version = "0.3", features = [
   "json",
 ] }
 
-tactica-api-types = { path = "api/types" }
-tactica-auth = { path = "auth" }
-tactica-permissions = { path = "permissions" }
-tactica-db = { path = "db" }
-tactica-db-schema = { path = "db/schema" }
-tactica-db-model = { path = "db/model" }
-tactica-uuid-kinds = { path = "uuid-kinds" }
+tactica-api-types = { path = "crates/api/types" }
+tactica-auth = { path = "crates/auth" }
+tactica-permissions = { path = "crates/permissions" }
+tactica-db = { path = "crates/db" }
+tactica-db-schema = { path = "crates/db/schema" }
+tactica-db-model = { path = "crates/db/model" }
+tactica-uuid-kinds = { path = "crates/uuid-kinds" }
