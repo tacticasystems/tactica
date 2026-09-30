@@ -26,7 +26,7 @@ runs:
       run: echo "MISE_SYSTEM_BREW_PREFIX=/tmp/brew" >> "${GITHUB_ENV}"
 
     - name: Install Mise
-      uses: https://github.com/jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      uses: jdx/mise-action@v4
       with:
         bootstrap: ${{ inputs.bootstrap }}
         cache: ${{ inputs.cache }}
@@ -35,7 +35,5 @@ runs:
         export_path: true
 
     - name: Rust cache
-      uses: https://github.com/dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
+      uses: Swatinem/rust-cache@v2
       if: ${{ inputs.cache == 'true' && inputs.rust == 'true' }}
-      with:
-        toolchain: 1.98.1
