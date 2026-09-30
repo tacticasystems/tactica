@@ -373,6 +373,7 @@ async fn unit_members_can_read_only_the_requested_units_roster_data() {
         .find(|role| role.kind == "everyone")
         .expect("Everyone role")
         .id;
+    assert_eq!(member.role_ids, vec![first_role, second_role, everyone_id]);
 
     let assignments = format!("{base}/members/{}/roles", first.owner_membership_id);
     let (status, body) = api.get(&assignments, Some(&token)).await;

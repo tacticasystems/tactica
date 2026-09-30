@@ -24,8 +24,9 @@ principals and non-member superusers do not bypass this rule.
 | GET | `/api/v1/units/{unit_id}/ranks` | `{ "ranks": [RankSummary] }` |
 | GET | `/api/v1/units/{unit_id}/roles` | `{ "roles": [RoleSummary] }` |
 | GET | `/api/v1/units/{unit_id}/members/{member_id}/roles` | `{ "role_ids": [UUID] }` |
+| GET | `/api/v1/units/{unit_id}/roles/{role_id}/members` | `{ "member_ids": [UUID] }` |
 
-- `MemberSummary`: `id`, `user_id`, `unit_id`, `rank_id`.
+- `MemberSummary`: `id`, `user_id`, `unit_id`, `rank_id`, `username`, `display_name`, `icon_url`, `role_ids`.
 - `RankSummary`: `id`, `unit_id`, `slug`, `display_name`, `icon_url`, `description`.
 - `RoleSummary`: `id`, `unit_id`, `display_name`, `description`, `permissions`, `position`, `kind`.
 
@@ -34,6 +35,14 @@ the unit's role listing. It always includes the implicit Everyone role for a
 current member (subject to pagination), alongside explicit role assignments. A member must belong to the unit in the URL. A member
 from another unit returns 404, even when the caller belongs to both units.
 User email addresses and authentication fields are never included in the roster.
+Roster `role_ids` include all explicit roles and implicit Everyone, ordered
+highest first. Assignments are loaded in one batch for the roster page.
+
+The role-member response lists assigned membership IDs in ascending order, which
+clients can resolve against the unit roster. Everyone returns all current unit
+members, including those without explicit bindings. A missing role or a role
+from another unit returns 404. The same pagination and member-only access rules
+apply.
 
 ## Pagination and errors
 

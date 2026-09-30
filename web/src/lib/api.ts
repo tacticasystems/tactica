@@ -80,6 +80,13 @@ export const createUnit = (display_name: string, slug: string) =>
   });
 
 export const api: UnitDataSource = {
+  allMembers: (id, signal) => listAll<Member>(`/units/${id}/members`, "members", signal),
+  roleMembers: (unitId, roleId, signal) =>
+    listAll<string>(`/units/${unitId}/roles/${roleId}/members`, "member_ids", signal),
+  setRoleMember: (unitId, roleId, memberId, assigned) =>
+    client.request<void>(`/units/${unitId}/members/${memberId}/roles/${roleId}`, {
+      method: assigned ? "PUT" : "DELETE",
+    }),
   reorderRoles: async (unitId, roleIds) =>
     (
       await client.request<{ roles: Role[] }>(`/units/${unitId}/roles/order`, {

@@ -33,6 +33,14 @@ export function canManageRoles(access: Access) {
   return access.is_owner || (access.permissions & 5) !== 0;
 }
 
+export function canAssignRole(access: Access, role: Role) {
+  return (
+    role.kind !== "everyone" &&
+    (access.is_owner || (access.permissions & 9) !== 0) &&
+    (access.is_owner || role.position < access.highest_role_position)
+  );
+}
+
 export function canEditRole(access: Access, role: Role) {
   return (
     role.kind !== "administrator" &&

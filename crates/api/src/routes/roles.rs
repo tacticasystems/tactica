@@ -5,11 +5,13 @@ use axum::{
     routing::{get, patch, put},
 };
 use tactica_api_types::v1::roles::{
-    CreateRoleRequest, ListRolesResponse, ReorderRolesRequest, RoleSummary, UpdateRoleRequest,
+    CreateRoleRequest, ListRoleMembersResponse, ListRolesResponse, ReorderRolesRequest,
+    RoleSummary, UpdateRoleRequest,
 };
 use tactica_db_model::{
-    ListPagination, NewUnitRole, UnitRole, UnitRoleFilter, UnitRoleManagementStore, UnitRolePatch,
-    UnitRoleStore,
+    ListPagination, NewUnitRole, UnitMemberRoleFilter, UnitMemberRoleStore, UnitMembershipFilter,
+    UnitMembershipStore, UnitRole, UnitRoleFilter, UnitRoleManagementStore, UnitRolePatch,
+    UnitRoleStore, role_kind,
 };
 use tactica_permissions::Permissions;
 use tactica_uuid_kinds::{MemberId, RoleId, UnitId};
@@ -28,6 +30,10 @@ pub fn router() -> Router<ApiState> {
         )
         .route("/api/v1/units/{unit_id}/roles/order", patch(reorder_roles))
         .route(
+            "/api/v1/units/{unit_id}/roles/{role_id}/members",
+            get(list_role_members),
+        )
+        .route(
             "/api/v1/units/{unit_id}/roles/{role_id}",
             patch(update_role).delete(delete_role),
         )
@@ -35,6 +41,51 @@ pub fn router() -> Router<ApiState> {
             "/api/v1/units/{unit_id}/members/{member_id}/roles/{role_id}",
             put(assign_role).delete(remove_role),
         )
+}
+
+#[utoipa::path(get, path = "/api/v1/units/{unit_id}/roles/{role_id}/members",
+    params(("unit_id" = UnitId, Path), ("role_id" = RoleId, Path),
+        ("offset" = Option<i64>, Query, description = "Non-negative offset; defaults to 0"),
+        ("limit" = Option<i64>, Query, description = "Page size from 1 to 100; defaults to 10")),
+    responses((status = 200, body = ListRoleMembersResponse, description = "Assigned membership IDs, sorted ascending"),
+        (status = 400, description = "Invalid pagination"), (status = 401, description = "Authentication required"),
+        (status = 403, description = "Unit membership required"), (status = 404, description = "Unit or role not found")))]
+async fn list_role_members(
+    Storage(storage): Storage,
+    Principal(principal): Principal,
+    Path((unit_id, role_id)): Path<(UnitId, RoleId)>,
+    Query(pagination): Query<ListPagination>,
+) -> Result<Json<ListRoleMembersResponse>> {
+    validate_pagination(&pagination)?;
+    require_unit_member(storage.as_ref(), principal, unit_id).await?;
+    let role = UnitRoleStore::get(storage.as_ref(), role_id)
+        .await?
+        .filter(|role| role.unit_id == unit_id)
+        .ok_or(Error::NotFound)?;
+    let member_ids = if role.kind == role_kind::EVERYONE {
+        UnitMembershipStore::list(
+            storage.as_ref(),
+            UnitMembershipFilter::default().unit_id(vec![unit_id]),
+            &pagination,
+        )
+        .await?
+        .into_iter()
+        .map(|member| member.id)
+        .collect()
+    } else {
+        UnitMemberRoleStore::list(
+            storage.as_ref(),
+            UnitMemberRoleFilter::default()
+                .unit_id(vec![unit_id])
+                .role_id(vec![role_id]),
+            &pagination,
+        )
+        .await?
+        .into_iter()
+        .map(|binding| binding.member_id)
+        .collect()
+    };
+    Ok(Json(ListRoleMembersResponse { member_ids }))
 }
 
 #[utoipa::path(

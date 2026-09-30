@@ -1,9 +1,10 @@
 import { Textarea } from "../components/ui/textarea";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { useState } from "react";
-import type { FormEvent } from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useBlocker, useNavigate, useSearch } from "@tanstack/react-router";
 import { Check, LockKeyhole, Plus, Trash2, X } from "lucide-react";
 import { useWorkspace } from "../components/workspace";
 import { EmptyState, ErrorState, LoadingState, PageHeading } from "../components/shared";
@@ -25,11 +26,19 @@ import {
   permissionDefinitions,
 } from "../lib/permissions";
 import { RoleList } from "../components/role-list";
+import { RoleMembers } from "../components/role-members";
 import { errorMessage, queryClient } from "../lib/queries";
 import type { Access, Role, RoleInput } from "../lib/types";
 
 export function RolesPage() {
   const { unit, source, queryKey, preview } = useWorkspace();
+  const { roleId } = useSearch({ from: "/units/$unitId/roles" });
+  const navigate = useNavigate({ from: "/units/$unitId/roles" });
+  const selected = roleId ?? null;
+  const setSelected = (id: string | null) => {
+    // Callers either guard the switch or explicitly save/discard the draft.
+    void navigate({ search: id ? { roleId: id } : {}, ignoreBlocker: true });
+  };
   const roles = useQuery({
     queryKey: [...queryKey, "roles"],
     queryFn: ({ signal }) => source.roles(unit.id, signal),
@@ -40,12 +49,25 @@ export function RolesPage() {
   });
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [dirty, setDirty] = useState(false);
   const [switchTarget, setSwitchTarget] = useState<string | null>(null);
-  const currentId =
-    selected ?? roles.data?.find((role) => role.kind === "custom")?.id ?? roles.data?.[0]?.id;
+  const defaultId = roles.data?.find((role) => role.kind === "custom")?.id ?? roles.data?.[0]?.id;
+  const validSelection = selected === "new" || roles.data?.some((role) => role.id === selected);
+  const currentId = validSelection ? (selected ?? undefined) : defaultId;
+  useEffect(() => {
+    if (roles.isSuccess && selected && !validSelection) {
+      void navigate({ search: {}, replace: true, ignoreBlocker: true });
+    }
+  }, [roles.isSuccess, selected, validSelection, navigate]);
+  const blocker = useBlocker({
+    shouldBlockFn: ({ current, next }) =>
+      dirty &&
+      (current.pathname !== next.pathname ||
+        ("roleId" in next.search ? next.search.roleId : defaultId) !== currentId),
+    enableBeforeUnload: dirty,
+    withResolver: true,
+  });
   const role = roles.data?.find((role) => role.id === currentId);
   const select = (id: string) => {
     if (id === currentId) return;
@@ -87,9 +109,12 @@ export function RolesPage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: [...queryKey, "roles"] }),
         queryClient.invalidateQueries({ queryKey: [...queryKey, "access"] }),
+        queryClient.invalidateQueries({ queryKey: [...queryKey, "members"] }),
       ]);
     },
     onError: () => {
+      void queryClient.invalidateQueries({ queryKey: [...queryKey, "roles"] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKey, "members"] });
       void queryClient.invalidateQueries({ queryKey: [...queryKey, "access"] });
     },
   });
@@ -150,7 +175,8 @@ export function RolesPage() {
       />
       {preview && (
         <p className="roles-preview-note">
-          Example role is unassigned preview content. It does not describe access in 9 Rifles.
+          Roles and assignments are preview content for trying the UI. They do not describe access
+          in 9 Rifles.
         </p>
       )}
       {notice && (
@@ -167,14 +193,19 @@ export function RolesPage() {
           </button>
         </div>
       )}
-      {switchTarget && (
+      {(switchTarget || blocker.status === "blocked") && (
         <div className="unsaved-prompt" role="alert">
-          <p>You have unsaved changes. Discard them to open another role?</p>
+          <p>
+            {blocker.status === "blocked" && blocker.next.pathname !== blocker.current.pathname
+              ? "You have unsaved changes. Discard them to leave this page?"
+              : "You have unsaved changes. Discard them to open another role?"}
+          </p>
           <div className="actions">
             <Button
               variant="outline"
               onClick={() => {
-                setSelected(switchTarget);
+                if (blocker.status === "blocked") blocker.proceed();
+                else setSelected(switchTarget);
                 setSwitchTarget(null);
                 setDirty(false);
                 save.reset();
@@ -182,7 +213,13 @@ export function RolesPage() {
             >
               Discard changes
             </Button>
-            <Button variant="ghost" onClick={() => setSwitchTarget(null)}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (blocker.status === "blocked") blocker.reset();
+                setSwitchTarget(null);
+              }}
+            >
               Keep editing
             </Button>
           </div>
@@ -214,34 +251,38 @@ export function RolesPage() {
           }}
         />
         {currentId === "new" || role ? (
-          <RoleEditor
-            key={currentId}
-            role={role}
-            access={capabilities}
-            pending={pending}
-            error={save.isError ? errorMessage(save.error) : ""}
-            onDelete={
-              role && canDeleteRole(capabilities, role)
-                ? () => {
-                    remove.reset();
-                    setDeleteTarget(role);
-                    setDeleteOpen(true);
-                  }
-                : undefined
-            }
-            onDirty={setDirty}
-            onSave={(input) => {
-              setNotice("");
-              save.mutate({ roleId: role?.id ?? null, input });
-            }}
-            onCancel={() => {
-              save.reset();
-              setDirty(false);
-              setSelected(
-                roles.data.find((item) => item.kind === "custom")?.id ?? roles.data[0]?.id ?? null,
-              );
-            }}
-          />
+          <RoleDetails role={role} access={capabilities} pending={pending}>
+            <RoleEditor
+              key={currentId}
+              role={role}
+              access={capabilities}
+              pending={pending}
+              error={save.isError ? errorMessage(save.error) : ""}
+              onDelete={
+                role && canDeleteRole(capabilities, role)
+                  ? () => {
+                      remove.reset();
+                      setDeleteTarget(role);
+                      setDeleteOpen(true);
+                    }
+                  : undefined
+              }
+              onDirty={setDirty}
+              onSave={(input) => {
+                setNotice("");
+                save.mutate({ roleId: role?.id ?? null, input });
+              }}
+              onCancel={() => {
+                save.reset();
+                setDirty(false);
+                setSelected(
+                  roles.data.find((item) => item.kind === "custom")?.id ??
+                    roles.data[0]?.id ??
+                    null,
+                );
+              }}
+            />
+          </RoleDetails>
         ) : (
           <EmptyState title="No roles to display">
             Create a role to define access for your unit.
@@ -295,6 +336,49 @@ export function RolesPage() {
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+function RoleDetails({
+  role,
+  access,
+  pending,
+  children,
+}: {
+  role?: Role;
+  access: Access;
+  pending: boolean;
+  children: ReactNode;
+}) {
+  const [membersOpen, setMembersOpen] = useState(false);
+  const showMembers = !!role && membersOpen;
+  return (
+    <div className="role-details">
+      {role && (
+        <nav className="role-view-switch" aria-label="Role details">
+          <Button
+            type="button"
+            variant={membersOpen ? "ghost" : "secondary"}
+            aria-pressed={!membersOpen}
+            onClick={() => setMembersOpen(false)}
+          >
+            Permissions
+          </Button>
+          <Button
+            type="button"
+            variant={membersOpen ? "secondary" : "ghost"}
+            aria-pressed={membersOpen}
+            onClick={() => setMembersOpen(true)}
+          >
+            Members
+          </Button>
+        </nav>
+      )}
+      <div hidden={showMembers}>{children}</div>
+      {role && showMembers && (
+        <RoleMembers key={role.id} role={role} access={access} pending={pending} />
+      )}
+    </div>
   );
 }
 

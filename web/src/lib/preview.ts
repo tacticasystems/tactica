@@ -27,6 +27,7 @@ const members: Member[] = roster.map(([name, , abbreviation], index) => ({
   username: name,
   display_name: name,
   icon_url: null,
+  role_ids: ["everyone"],
 }));
 
 let roles: Role[] = [
@@ -60,8 +61,28 @@ let roles: Role[] = [
 ];
 
 const copy = <T>(value: T): Promise<T> => Promise.resolve(structuredClone(value));
+const bindings = new Map<string, Set<string>>();
 
 export const previewApi: UnitDataSource = {
+  allMembers: () => copy(membersWithRoles()),
+  roleMembers: (_unitId, roleId) =>
+    copy(
+      roleId === "everyone"
+        ? members.map((member) => member.id)
+        : [...(bindings.get(roleId) ?? [])],
+    ),
+  async setRoleMember(_unitId, roleId, memberId, assigned) {
+    if (
+      !roles.some((role) => role.id === roleId) ||
+      !members.some((member) => member.id === memberId)
+    )
+      throw new Error("This role or member no longer exists.");
+    if (roleId === "everyone") throw new Error("Everyone applies automatically.");
+    const memberIds = bindings.get(roleId) ?? new Set<string>();
+    if (assigned) memberIds.add(memberId);
+    else memberIds.delete(memberId);
+    bindings.set(roleId, memberIds);
+  },
   async reorderRoles(_unitId, roleIds) {
     if (
       roleIds.length !== roles.length ||
@@ -86,6 +107,7 @@ export const previewApi: UnitDataSource = {
     const role = roles.find((item) => item.id === roleId);
     if (!role) throw new Error("This role no longer exists.");
     if (role.kind !== "custom") throw new Error("Built-in roles cannot be deleted.");
+    bindings.delete(roleId);
     roles = roles
       .filter((item) => item.id !== roleId)
       .map((item) =>
@@ -93,7 +115,7 @@ export const previewApi: UnitDataSource = {
       );
   },
   unit: () => copy(previewUnit),
-  members: (_id, offset) => copy(members.slice(offset, offset + 20)),
+  members: (_id, offset) => copy(membersWithRoles().slice(offset, offset + 20)),
   ranks: () =>
     copy(
       Array.from(
@@ -148,3 +170,12 @@ export const previewApi: UnitDataSource = {
     return structuredClone(next);
   },
 };
+
+function membersWithRoles(): Member[] {
+  return members.map((member) => ({
+    ...member,
+    role_ids: roles
+      .filter((role) => role.kind === "everyone" || bindings.get(role.id)?.has(member.id))
+      .map((role) => role.id),
+  }));
+}

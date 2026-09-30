@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useWorkspace } from "../components/workspace";
 import { Avatar, EmptyState, ErrorState, LoadingState, PageHeading } from "../components/shared";
 import { Button } from "../components/ui/button";
 import { safeImage } from "../lib/utils";
+import { canManageRoles } from "../lib/permissions";
 
 export function PersonnelPage() {
   const { unit, source, preview, queryKey } = useWorkspace();
@@ -19,6 +21,15 @@ export function PersonnelPage() {
     queryKey: [...queryKey, "ranks"],
     queryFn: ({ signal }) => source.ranks(unit.id, signal),
   });
+  const roles = useQuery({
+    queryKey: [...queryKey, "roles"],
+    queryFn: ({ signal }) => source.roles(unit.id, signal),
+  });
+  const access = useQuery({
+    queryKey: [...queryKey, "access"],
+    queryFn: ({ signal }) => source.access(unit.id, signal),
+  });
+  const linkRoles = !!access.data && canManageRoles(access.data);
   const filtered = members.data?.filter((member) =>
     (member.display_name ?? member.username)
       .toLocaleLowerCase()
@@ -49,14 +60,15 @@ export function PersonnelPage() {
         {search && <span>{filtered?.length ?? 0} on this page match</span>}
         {members.isFetching && !members.isPending && <span role="status">Updating…</span>}
       </div>
-      {members.isPending || ranks.isPending ? (
+      {members.isPending || ranks.isPending || roles.isPending ? (
         <LoadingState label="Loading personnel" />
-      ) : members.isError || ranks.isError ? (
+      ) : members.isError || ranks.isError || roles.isError ? (
         <ErrorState
-          error={members.error ?? ranks.error}
+          error={members.error ?? ranks.error ?? roles.error}
           retry={() => {
             void members.refetch();
             void ranks.refetch();
+            void roles.refetch();
           }}
         />
       ) : filtered?.length === 0 ? (
@@ -73,6 +85,7 @@ export function PersonnelPage() {
               <tr>
                 <th scope="col">Member</th>
                 <th scope="col">Rank</th>
+                <th scope="col">Roles</th>
               </tr>
             </thead>
             <tbody>
@@ -97,6 +110,30 @@ export function PersonnelPage() {
                         <span>{rank?.display_name ?? rank?.slug ?? "Unspecified rank"}</span>
                         {preview && <span className="rank-abbreviation">{rank?.slug}</span>}
                       </div>
+                    </td>
+                    <td>
+                      <ul className="member-role-pills" aria-label={`${name} roles`}>
+                        {roles.data
+                          ?.filter(
+                            (role) => role.kind !== "everyone" && member.role_ids.includes(role.id),
+                          )
+                          .map((role) => (
+                            <li key={role.id}>
+                              {linkRoles ? (
+                                <Link
+                                  className="role-pill"
+                                  to="/units/$unitId/roles"
+                                  params={{ unitId: unit.id }}
+                                  search={{ roleId: role.id }}
+                                >
+                                  {role.display_name}
+                                </Link>
+                              ) : (
+                                <span className="role-pill">{role.display_name}</span>
+                              )}
+                            </li>
+                          ))}
+                      </ul>
                     </td>
                   </tr>
                 );

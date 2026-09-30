@@ -11,6 +11,8 @@ pub struct MemberSummary {
     pub username: String,
     pub display_name: Option<String>,
     pub icon_url: Option<String>,
+    /// Roles applying to this member, highest first, including implicit Everyone.
+    pub role_ids: Vec<RoleId>,
 }
 
 /// Current member's UI capabilities; role writes remain authoritative.
