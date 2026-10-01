@@ -160,7 +160,7 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
           title: "Ranks",
           to: "/units/$unitId/ranks",
         },
-      ]
+      ],
     },
   ] as const;
 
@@ -171,65 +171,60 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
           <SidebarMenu className="gap-1">
             {unit ? (
               <>
-                {links.map(link =>
-                  link.children ?
-                    (
-                      <SidebarMenuItem key={link.group}>
-                        <Collapsible defaultOpen>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton>
-                              {link.icon}
-                              <span>{link.title}</span>
-                              <ChevronDown className="administration-chevron" />
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub>
-                              {link.children.map(child => (
-                                <SidebarMenuSubItem key={link.group + "-" + child.to}>
-                                  <SidebarMenuSubButton
-                                    asChild
-                                    isActive={currentRouteId.startsWith(child.to)}
-                                  >
-                                    <Link
-                                      to={child.to}
-                                      params={{ unitId: unit.id }}
-                                      onClick={close}
-                                    >
-                                      <span>{child.title}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      </SidebarMenuItem>
-                    ) : (
-                      <SidebarMenuItem key={link.page}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={
-                            location.pathname === `/units/${unit.id}/${link.page}` ||
-                            (link.page === "ranks" &&
-                              location.pathname.startsWith(`/units/${unit.id}/ranks/`)) ||
-                            (link.page === "personnel" && location.pathname.includes("/personnel/"))
-                          }
-                        >
-                          <Link
-                            to={`/units/$unitId/${link.page}`}
-                            params={{ unitId: unit.id }}
-                            onClick={link.close}
-                          >
+                {links.map((link) =>
+                  link.children ? (
+                    <SidebarMenuItem key={link.group}>
+                      <Collapsible defaultOpen>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton>
                             {link.icon}
                             <span>{link.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                        {link.page === "personnel" && (
-                          <SidebarMenuBadge>{unit.member_count}</SidebarMenuBadge>
-                        )}
-                      </SidebarMenuItem>
-                    )
+                            <ChevronDown className="administration-chevron" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {link.children.map((child) => (
+                              <SidebarMenuSubItem key={link.group + "-" + child.to}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={currentRouteId.startsWith(child.to)}
+                                >
+                                  <Link to={child.to} params={{ unitId: unit.id }} onClick={close}>
+                                    <span>{child.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </SidebarMenuItem>
+                  ) : (
+                    <SidebarMenuItem key={link.page}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={
+                          location.pathname === `/units/${unit.id}/${link.page}` ||
+                          (link.page === "ranks" &&
+                            location.pathname.startsWith(`/units/${unit.id}/ranks/`)) ||
+                          (link.page === "personnel" && location.pathname.includes("/personnel/"))
+                        }
+                      >
+                        <Link
+                          to={`/units/$unitId/${link.page}`}
+                          params={{ unitId: unit.id }}
+                          onClick={link.close}
+                        >
+                          {link.icon}
+                          <span>{link.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                      {link.page === "personnel" && (
+                        <SidebarMenuBadge>{unit.member_count}</SidebarMenuBadge>
+                      )}
+                    </SidebarMenuItem>
+                  ),
                 )}
                 <SidebarMenuItem>
                   <Collapsible defaultOpen className="administration-menu">
