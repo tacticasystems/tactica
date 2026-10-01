@@ -60,7 +60,7 @@ function UnitsContent() {
           {units.data.map((unit) => (
             <Link
               key={unit.id}
-              to="/units/$unitId/personnel"
+              to="/units/$unitId"
               params={{ unitId: unit.id }}
               className="unit-list-row"
             >
