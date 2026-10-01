@@ -85,7 +85,7 @@ impl IntoResponse for Error {
                     "An internal server error occurred.".to_string(),
                     "internal_server_error".to_string(),
                 )
-            },
+            }
         };
 
         let error = v1::ApiError {
