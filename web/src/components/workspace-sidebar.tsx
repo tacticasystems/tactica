@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronsUpDown,
-  ChevronsUp,
   Home,
   LogOut,
   Settings,
