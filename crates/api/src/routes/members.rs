@@ -267,13 +267,14 @@ async fn get_member(
     let user = UserStore::get(storage.as_ref(), member.user_id)
         .await?
         .ok_or(Error::NotFound)?;
-    let roles = UnitRoleStore::list_for_member(
+    let mut roles = UnitRoleStore::list_for_member(
         storage.as_ref(),
         unit_id,
         member_id,
         &ListPagination::unlimited(),
     )
     .await?;
+    roles.sort_by_key(|role| std::cmp::Reverse(role.position));
     Ok(Json(MemberSummary {
         id: member.id,
         user_id: member.user_id,

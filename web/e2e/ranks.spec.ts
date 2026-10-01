@@ -31,6 +31,7 @@ async function workspace(page: Page, permissions = 16) {
     failMembers: false,
     loseRankResponse: false,
     failMember: false,
+    failMemberOnce: false,
     roles: [] as Role[],
   };
   const assignedRanks = new Map<string, string>();
@@ -96,7 +97,8 @@ async function workspace(page: Page, permissions = 16) {
       }));
       await route.fulfill({ json: { members: members.slice(offset, offset + limit) } });
     } else if (/^\/units\/unit\/members\/[^/]+$/.test(path) && method === "GET") {
-      if (state.failMember) {
+      if (state.failMember || state.failMemberOnce) {
+        state.failMemberOnce = false;
         await route.fulfill({ status: 500, json: { message: "Could not load member." } });
         return;
       }
@@ -190,6 +192,11 @@ async function workspace(page: Page, permissions = 16) {
   return {
     state,
     writes,
+    updateMember: (id: string, rankId: string, name: string | null, roles: string[]) => {
+      assignedRanks.set(id, rankId);
+      assignedNames.set(id, name);
+      assignedRoles.set(id, roles);
+    },
     updateRank: (id: string, changes: Partial<Rank>) => {
       ranks = ranks.map((rank) => (rank.id === id ? { ...rank, ...changes } : rank));
     },
@@ -789,3 +796,46 @@ for (const resource of ["members/member-0", "ranks", "roles", "access"]) {
     await expect(page.getByRole("alert")).toContainText("unsaved changes");
   });
 }
+
+test("committed member drafts reconcile before later server changes", async ({ page }) => {
+  const { state, updateMember } = await workspace(page, 104);
+  state.roles = [
+    {
+      id: "medic",
+      unit_id: "unit",
+      display_name: "Medic",
+      kind: "custom",
+      position: 1,
+      permissions: 0,
+      description: null,
+    },
+  ];
+  await page.goto("/units/unit/personnel/member-0/edit");
+  await page.getByRole("textbox", { name: "Display name", exact: true }).fill("  Saved name  ");
+  await page.getByRole("combobox").click();
+  await page.getByRole("option", { name: "Major", exact: true }).click();
+  await page.getByRole("checkbox", { name: "Medic", exact: true }).check();
+  state.failMemberOnce = true;
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeDisabled();
+  await expect(page.getByRole("textbox", { name: "Display name", exact: true })).toHaveValue(
+    "Saved name",
+  );
+  updateMember("member-0", "private", "Remote name", []);
+  await refetchRanks(page);
+  await expect(page.getByRole("textbox", { name: "Display name", exact: true })).toHaveValue(
+    "Remote name",
+  );
+  await expect(page.getByRole("combobox")).toHaveText("Private");
+  await expect(page.getByRole("checkbox", { name: "Medic", exact: true })).not.toBeChecked();
+  await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeDisabled();
+  await page.getByRole("textbox", { name: "Display name", exact: true }).fill("Local name");
+  updateMember("member-0", "major", "Another remote name", ["medic"]);
+  await refetchRanks(page);
+  await expect(page.getByRole("textbox", { name: "Display name", exact: true })).toHaveValue(
+    "Local name",
+  );
+  await expect(page.getByRole("combobox")).toHaveText("Major");
+  await expect(page.getByRole("checkbox", { name: "Medic", exact: true })).toBeChecked();
+  await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeEnabled();
+});

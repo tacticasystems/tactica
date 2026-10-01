@@ -790,6 +790,22 @@ async fn member_details_include_rank_and_roles_and_enforce_unit_membership() {
             .contains(&json!(role.id))
     );
     assert_eq!(body["role_ids"].as_array().expect("roles").len(), 2);
+    // UUID order places the unit's earlier-created Everyone role before Medic,
+    // but the response must follow the role hierarchy, like the roster.
+    assert_eq!(body["role_ids"][0], json!(role.id));
+    let (_, roster) = api
+        .get(
+            &format!("/api/v1/units/{}/members", unit.unit.id),
+            Some(&token),
+        )
+        .await;
+    let listed = roster["members"]
+        .as_array()
+        .expect("members")
+        .iter()
+        .find(|item| item["id"] == json!(membership.id))
+        .expect("listed member");
+    assert_eq!(body["role_ids"], listed["role_ids"]);
     assert_eq!(api.get(&path, None).await.0, StatusCode::UNAUTHORIZED);
     let outsider = user(&api, "outsider").await;
     let outsider_token = api.jwt.generate_jwt_for_user(outsider).expect("token");

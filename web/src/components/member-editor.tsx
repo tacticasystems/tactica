@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useBlocker, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { canAssignRanks, canAssignRole, canManageMemberProfiles } from "../lib/permissions";
 import { queryClient } from "../lib/queries";
 import { ApiError } from "../lib/session-client";
@@ -28,6 +28,22 @@ export function MemberEditor({
   const [draftRank, setDraftRank] = useState<string | null>(null);
   const [draftName, setDraftName] = useState<string | undefined>();
   const [roleEdits, setRoleEdits] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    setDraftRank((draft) => (draft === member.rank_id ? null : draft));
+    setDraftName((draft) =>
+      draft !== undefined && (draft.trim() || null) === member.unit_display_name
+        ? undefined
+        : draft,
+    );
+    setRoleEdits((previous) => {
+      const remaining = Object.fromEntries(
+        Object.entries(previous).filter(
+          ([id, selected]) => selected !== member.role_ids.includes(id),
+        ),
+      );
+      return Object.keys(remaining).length === Object.keys(previous).length ? previous : remaining;
+    });
+  }, [member.rank_id, member.unit_display_name, member.role_ids]);
   const rankId = draftRank ?? member.rank_id;
   const displayName = draftName ?? member.unit_display_name ?? "";
   const nameDirty = (displayName.trim() || null) !== (member.unit_display_name ?? null);
