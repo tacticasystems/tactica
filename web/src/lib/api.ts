@@ -94,9 +94,21 @@ export const api: UnitDataSource = {
         body: JSON.stringify({ rank_ids: [...rankIds].reverse() }),
       })
     ).ranks,
+  member: (unitId, memberId, signal) =>
+    client.request<Member>(`/units/${unitId}/members/${memberId}`, { signal }),
   allMembers: (id, signal) => listAll<Member>(`/units/${id}/members`, "members", signal),
   roleMembers: (unitId, roleId, signal) =>
     listAll<string>(`/units/${unitId}/roles/${roleId}/members`, "member_ids", signal),
+  saveMember: (unitId, memberId, input) =>
+    client.request<void>(`/units/${unitId}/members/${memberId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  setMemberRank: (unitId, memberId, rankId) =>
+    client.request<void>(`/units/${unitId}/members/${memberId}/rank`, {
+      method: "PUT",
+      body: JSON.stringify({ rank_id: rankId }),
+    }),
   setRoleMember: (unitId, roleId, memberId, assigned) =>
     client.request<void>(`/units/${unitId}/members/${memberId}/roles/${roleId}`, {
       method: assigned ? "PUT" : "DELETE",

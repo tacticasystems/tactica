@@ -517,3 +517,526 @@ async fn everyone_can_grant_rank_management_and_concurrent_creates_preserve_orde
             .collect::<Vec<_>>()
     );
 }
+
+#[tokio::test(flavor = "multi_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Check assignment permissions and revocation against one fixture"
+)]
+async fn member_rank_assignment_requires_live_assign_permission_without_rank_hierarchy() {
+    let api = ApiFixture::new().await;
+    let owner = user(&api, "owner").await;
+    let unit = create_unit(&api, owner, "unit").await;
+    let owner_token = api.jwt.generate_jwt_for_user(owner).expect("token");
+    let low_rank = create_rank(&api, &owner_token, unit.unit.id, "Jr.").await;
+    let actor = user(&api, "assigner").await;
+    let member = UnitMembershipStore::create(
+        &api.storage,
+        NewUnitMembership {
+            id: MemberId::new(),
+            unit_id: unit.unit.id,
+            user_id: actor,
+            rank_id: low_rank.id,
+        },
+    )
+    .await
+    .expect("member");
+    let token = api.jwt.generate_jwt_for_user(actor).expect("token");
+    let path = format!("/api/v1/units/{}/members/{}/rank", unit.unit.id, member.id);
+    let input = json!({"rank_id": unit.owner_rank_id});
+    assert_eq!(
+        request(&api, "PUT", &path, None, input.clone()).await.0,
+        StatusCode::UNAUTHORIZED
+    );
+    let mut role = UnitRoleStore::create(
+        &api.storage,
+        NewUnitRole {
+            id: RoleId::new(),
+            unit_id: unit.unit.id,
+            display_name: "Assigner".to_owned(),
+            description: None,
+            permissions: 0,
+        },
+    )
+    .await
+    .expect("role");
+    UnitMemberRoleStore::assign(
+        &api.storage,
+        NewUnitMemberRole {
+            unit_id: unit.unit.id,
+            member_id: member.id,
+            role_id: role.id,
+        },
+    )
+    .await
+    .expect("assign role");
+    for mask in [0, 16, 4, 8, 64] {
+        role.permissions = mask;
+        role = UnitRoleStore::update(&api.storage, role)
+            .await
+            .expect("permissions");
+        assert_eq!(
+            request(&api, "PUT", &path, Some(&token), input.clone())
+                .await
+                .0,
+            StatusCode::FORBIDDEN
+        );
+        assert_eq!(
+            UnitMembershipStore::get(&api.storage, member.id)
+                .await
+                .expect("read")
+                .expect("member")
+                .rank_id,
+            low_rank.id
+        );
+    }
+    // AssignRanks alone permits promoting oneself above one's current rank.
+    for mask in [32, 1] {
+        role.permissions = mask;
+        role = UnitRoleStore::update(&api.storage, role)
+            .await
+            .expect("permissions");
+        for _ in 0..2 {
+            assert_eq!(
+                request(&api, "PUT", &path, Some(&token), input.clone())
+                    .await
+                    .0,
+                StatusCode::NO_CONTENT
+            );
+        }
+        assert_eq!(
+            UnitMembershipStore::get(&api.storage, member.id)
+                .await
+                .expect("read")
+                .expect("member")
+                .rank_id,
+            unit.owner_rank_id
+        );
+        // Owner can also assign without an explicit AssignRanks grant.
+        assert_eq!(
+            request(
+                &api,
+                "PUT",
+                &path,
+                Some(&owner_token),
+                json!({"rank_id": low_rank.id})
+            )
+            .await
+            .0,
+            StatusCode::NO_CONTENT
+        );
+    }
+    role.permissions = 0;
+    UnitRoleStore::update(&api.storage, role)
+        .await
+        .expect("revoke");
+    assert_eq!(
+        request(&api, "PUT", &path, Some(&token), input).await.0,
+        StatusCode::FORBIDDEN
+    );
+    let (_, roster) = api
+        .get(
+            &format!("/api/v1/units/{}/members", unit.unit.id),
+            Some(&owner_token),
+        )
+        .await;
+    assert!(
+        roster["members"]
+            .as_array()
+            .expect("roster")
+            .iter()
+            .any(|item| item["id"] == json!(member.id) && item["rank_id"] == json!(low_rank.id))
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn member_rank_assignment_rejects_foreign_and_missing_targets() {
+    let api = ApiFixture::new().await;
+    let owner = user(&api, "owner").await;
+    let unit = create_unit(&api, owner, "unit").await;
+    let other = create_unit(&api, owner, "other").await;
+    let token = api.jwt.generate_jwt_for_user(owner).expect("token");
+    let member = UnitMembershipStore::get_by_user_and_unit(&api.storage, owner, unit.unit.id)
+        .await
+        .expect("read")
+        .expect("member");
+    let foreign = UnitMembershipStore::get_by_user_and_unit(&api.storage, owner, other.unit.id)
+        .await
+        .expect("read")
+        .expect("member");
+    for (member_id, rank_id) in [
+        (member.id, other.owner_rank_id),
+        (foreign.id, unit.owner_rank_id),
+        (MemberId::new(), unit.owner_rank_id),
+        (member.id, RankId::new()),
+    ] {
+        let path = format!("/api/v1/units/{}/members/{member_id}/rank", unit.unit.id);
+        assert_eq!(
+            request(
+                &api,
+                "PUT",
+                &path,
+                Some(&token),
+                json!({"rank_id": rank_id})
+            )
+            .await
+            .0,
+            StatusCode::NOT_FOUND
+        );
+    }
+    let path = format!("/api/v1/units/{}/members/{}/rank", unit.unit.id, member.id);
+    for body in [
+        json!({}),
+        json!({"rank_id": null}),
+        json!({"rank_id": "invalid"}),
+        json!({"rank_id": unit.owner_rank_id, "unit_id": other.unit.id}),
+    ] {
+        assert!(
+            request(&api, "PUT", &path, Some(&token), body)
+                .await
+                .0
+                .is_client_error()
+        );
+    }
+    let outsider = user(&api, "outsider").await;
+    let outsider_token = api.jwt.generate_jwt_for_user(outsider).expect("token");
+    assert_eq!(
+        request(
+            &api,
+            "PUT",
+            &path,
+            Some(&outsider_token),
+            json!({"rank_id": unit.owner_rank_id})
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        UnitMembershipStore::get(&api.storage, member.id)
+            .await
+            .expect("read")
+            .expect("member")
+            .rank_id,
+        unit.owner_rank_id
+    );
+    assert_eq!(
+        UnitMembershipStore::get(&api.storage, foreign.id)
+            .await
+            .expect("read")
+            .expect("member")
+            .rank_id,
+        other.owner_rank_id
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn member_details_include_rank_and_roles_and_enforce_unit_membership() {
+    let api = ApiFixture::new().await;
+    let owner = user(&api, "owner").await;
+    let unit = create_unit(&api, owner, "unit").await;
+    let other = create_unit(&api, owner, "other").await;
+    let member = user(&api, "reader").await;
+    let membership = UnitMembershipStore::create(
+        &api.storage,
+        NewUnitMembership {
+            id: MemberId::new(),
+            unit_id: unit.unit.id,
+            user_id: member,
+            rank_id: unit.owner_rank_id,
+        },
+    )
+    .await
+    .expect("membership");
+    let token = api.jwt.generate_jwt_for_user(member).expect("token");
+    let path = format!("/api/v1/units/{}/members/{}", unit.unit.id, membership.id);
+    let role = UnitRoleStore::create(
+        &api.storage,
+        NewUnitRole {
+            id: RoleId::new(),
+            unit_id: unit.unit.id,
+            display_name: "Medic".to_owned(),
+            description: None,
+            permissions: 0,
+        },
+    )
+    .await
+    .expect("role");
+    UnitMemberRoleStore::assign(
+        &api.storage,
+        NewUnitMemberRole {
+            unit_id: unit.unit.id,
+            member_id: membership.id,
+            role_id: role.id,
+        },
+    )
+    .await
+    .expect("assign");
+    let (status, body) = api.get(&path, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["id"], json!(membership.id));
+    assert_eq!(body["username"], "reader");
+    assert_eq!(body["rank_id"], json!(unit.owner_rank_id));
+    assert!(
+        body["role_ids"]
+            .as_array()
+            .expect("roles")
+            .contains(&json!(role.id))
+    );
+    assert_eq!(body["role_ids"].as_array().expect("roles").len(), 2);
+    assert_eq!(api.get(&path, None).await.0, StatusCode::UNAUTHORIZED);
+    let outsider = user(&api, "outsider").await;
+    let outsider_token = api.jwt.generate_jwt_for_user(outsider).expect("token");
+    assert_eq!(
+        api.get(&path, Some(&outsider_token)).await.0,
+        StatusCode::FORBIDDEN
+    );
+    let foreign = UnitMembershipStore::get_by_user_and_unit(&api.storage, owner, other.unit.id)
+        .await
+        .expect("read")
+        .expect("member");
+    for target in [foreign.id, MemberId::new()] {
+        assert_eq!(
+            api.get(
+                &format!("/api/v1/units/{}/members/{target}", unit.unit.id),
+                Some(&token)
+            )
+            .await
+            .0,
+            StatusCode::NOT_FOUND
+        );
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Exercise atomic member edits and all per-field permissions with one fixture"
+)]
+async fn member_edits_are_atomic_and_display_names_are_unit_specific() {
+    let api = ApiFixture::new().await;
+    let owner = user(&api, "owner").await;
+    let unit = create_unit(&api, owner, "unit").await;
+    let other = create_unit(&api, owner, "other").await;
+    let owner_token = api.jwt.generate_jwt_for_user(owner).expect("token");
+    let actor = user(&api, "editor").await;
+    let target = user(&api, "target").await;
+    let actor_member = UnitMembershipStore::create(
+        &api.storage,
+        NewUnitMembership {
+            id: MemberId::new(),
+            user_id: actor,
+            unit_id: unit.unit.id,
+            rank_id: unit.owner_rank_id,
+        },
+    )
+    .await
+    .expect("actor member");
+    let member = UnitMembershipStore::create(
+        &api.storage,
+        NewUnitMembership {
+            id: MemberId::new(),
+            user_id: target,
+            unit_id: unit.unit.id,
+            rank_id: unit.owner_rank_id,
+        },
+    )
+    .await
+    .expect("target member");
+    let foreign_member = UnitMembershipStore::create(
+        &api.storage,
+        NewUnitMembership {
+            id: MemberId::new(),
+            user_id: target,
+            unit_id: other.unit.id,
+            rank_id: other.owner_rank_id,
+        },
+    )
+    .await
+    .expect("other member");
+    let mut editor_role = UnitRoleStore::create(
+        &api.storage,
+        NewUnitRole {
+            id: RoleId::new(),
+            unit_id: unit.unit.id,
+            display_name: "Editor".to_owned(),
+            description: None,
+            permissions: 104,
+        },
+    )
+    .await
+    .expect("editor role");
+    UnitMemberRoleStore::assign(
+        &api.storage,
+        NewUnitMemberRole {
+            unit_id: unit.unit.id,
+            member_id: actor_member.id,
+            role_id: editor_role.id,
+        },
+    )
+    .await
+    .expect("grant");
+    let medic = UnitRoleStore::create(
+        &api.storage,
+        NewUnitRole {
+            id: RoleId::new(),
+            unit_id: unit.unit.id,
+            display_name: "Medic".to_owned(),
+            description: None,
+            permissions: 0,
+        },
+    )
+    .await
+    .expect("lower role");
+    let rank = create_rank(&api, &owner_token, unit.unit.id, "Sgt.").await;
+    let token = api.jwt.generate_jwt_for_user(actor).expect("token");
+    let path = format!("/api/v1/units/{}/members/{}", unit.unit.id, member.id);
+    let patch =
+        json!({"display_name": "  Unit nickname  ", "rank_id": rank.id, "role_ids": [medic.id]});
+    assert_eq!(
+        request(&api, "PATCH", &path, Some(&token), patch.clone())
+            .await
+            .0,
+        StatusCode::NO_CONTENT
+    );
+    let (_, details) = api.get(&path, Some(&token)).await;
+    assert_eq!(details["display_name"], "Unit nickname");
+    assert_eq!(details["unit_display_name"], "Unit nickname");
+    assert_eq!(details["rank_id"], json!(rank.id));
+    assert!(
+        details["role_ids"]
+            .as_array()
+            .expect("roles")
+            .contains(&json!(medic.id))
+    );
+    assert!(
+        UserStore::get(&api.storage, target)
+            .await
+            .expect("user")
+            .expect("exists")
+            .display_name
+            .is_none()
+    );
+    let (_, foreign) = api
+        .get(
+            &format!(
+                "/api/v1/units/{}/members/{}",
+                other.unit.id, foreign_member.id
+            ),
+            Some(&owner_token),
+        )
+        .await;
+    assert!(foreign["display_name"].is_null());
+    let blocked = json!({"display_name": "Must roll back", "rank_id": unit.owner_rank_id, "role_ids": [editor_role.id]});
+    assert_eq!(
+        request(&api, "PATCH", &path, Some(&token), blocked).await.0,
+        StatusCode::FORBIDDEN
+    );
+    let (_, after) = api.get(&path, Some(&token)).await;
+    assert_eq!(after, details);
+    // Name-only permission cannot assign ranks or roles, and failure saves nothing.
+    editor_role.permissions = 64;
+    editor_role = UnitRoleStore::update(&api.storage, editor_role)
+        .await
+        .expect("permissions");
+    assert_eq!(
+        request(
+            &api,
+            "PATCH",
+            &path,
+            Some(&token),
+            json!({"display_name": "Also rollback", "rank_id": unit.owner_rank_id})
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(api.get(&path, Some(&token)).await.1, details);
+    assert_eq!(
+        request(
+            &api,
+            "PATCH",
+            &path,
+            Some(&token),
+            json!({"display_name": null})
+        )
+        .await
+        .0,
+        StatusCode::NO_CONTENT
+    );
+    assert!(api.get(&path, Some(&token)).await.1["unit_display_name"].is_null());
+    editor_role.permissions = 8;
+    UnitRoleStore::update(&api.storage, editor_role)
+        .await
+        .expect("permissions");
+    assert_eq!(
+        request(&api, "PATCH", &path, Some(&token), json!({"role_ids": []}))
+            .await
+            .0,
+        StatusCode::NO_CONTENT
+    );
+    assert_eq!(
+        api.get(&path, Some(&token)).await.1["role_ids"]
+            .as_array()
+            .expect("Everyone")
+            .len(),
+        1
+    );
+    assert_eq!(
+        request(
+            &api,
+            "PATCH",
+            &path,
+            Some(&token),
+            json!({"display_name": "Denied"})
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+    for body in [
+        json!({}),
+        json!({"display_name": "x".repeat(101)}),
+        json!({"role_ids": [medic.id, medic.id]}),
+        json!({"username": "cannot-change"}),
+    ] {
+        assert!(
+            request(&api, "PATCH", &path, Some(&owner_token), body)
+                .await
+                .0
+                .is_client_error()
+        );
+    }
+    assert_eq!(
+        request(&api, "PATCH", &path, None, patch).await.0,
+        StatusCode::UNAUTHORIZED
+    );
+    assert_eq!(
+        request(
+            &api,
+            "PATCH",
+            &format!(
+                "/api/v1/units/{}/members/{}",
+                unit.unit.id, foreign_member.id
+            ),
+            Some(&owner_token),
+            json!({"display_name": "Foreign"})
+        )
+        .await
+        .0,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        request(
+            &api,
+            "PATCH",
+            &path,
+            Some(&owner_token),
+            json!({"display_name": "Foreign rank", "rank_id": other.owner_rank_id})
+        )
+        .await
+        .0,
+        StatusCode::NOT_FOUND
+    );
+    assert!(api.get(&path, Some(&token)).await.1["unit_display_name"].is_null());
+}

@@ -53,10 +53,20 @@ export function PersonnelTable({
                 <TableCell>
                   <div className="member-name">
                     <Avatar name={name} url={member.icon_url} />
-                    <strong>{name}</strong>
-                    {member.display_name && member.display_name !== member.username && (
-                      <span className="member-username">{member.username}</span>
-                    )}
+                    <div className="flex flex-col gap-1">
+                      <Link
+                        className="member-profile-link"
+                        to="/units/$unitId/personnel/$memberId"
+                        params={{ unitId, memberId: member.id }}
+                      >
+                        <strong>{rank?.slug}</strong>
+                        &nbsp;
+                        {name}
+                      </Link>
+                      {member.display_name && member.display_name !== member.username && (
+                        <span className="member-username">{member.username}</span>
+                      )}
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>

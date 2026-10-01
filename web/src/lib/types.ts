@@ -20,6 +20,12 @@ export interface CreatedUnit extends Omit<Unit, "member_count"> {
   member_id: string;
 }
 
+export interface MemberInput {
+  display_name?: string | null;
+  rank_id?: string;
+  role_ids?: string[];
+}
+
 export interface Member {
   id: string;
   user_id: string;
@@ -29,6 +35,7 @@ export interface Member {
   display_name: string | null;
   icon_url: string | null;
   role_ids: string[];
+  unit_display_name: string | null;
 }
 
 export interface RankInput {
@@ -75,12 +82,15 @@ export interface UnitDataSource {
   unit(id: string, signal?: AbortSignal): Promise<Unit>;
   members(id: string, offset: number, signal?: AbortSignal): Promise<Member[]>;
   ranks(id: string, signal?: AbortSignal): Promise<Rank[]>;
+  saveMember(unitId: string, memberId: string, input: MemberInput): Promise<void>;
+  setMemberRank(unitId: string, memberId: string, rankId: string): Promise<void>;
   saveRank(unitId: string, rankId: string | null, input: RankInput): Promise<Rank>;
   deleteRank(unitId: string, rankId: string): Promise<void>;
   /** Rank IDs in display order, highest first. */
   reorderRanks(unitId: string, rankIds: string[]): Promise<Rank[]>;
   roles(id: string, signal?: AbortSignal): Promise<Role[]>;
   access(id: string, signal?: AbortSignal): Promise<Access>;
+  member(unitId: string, memberId: string, signal?: AbortSignal): Promise<Member>;
   allMembers(id: string, signal?: AbortSignal): Promise<Member[]>;
   roleMembers(unitId: string, roleId: string, signal?: AbortSignal): Promise<string[]>;
   setRoleMember(unitId: string, roleId: string, memberId: string, assigned: boolean): Promise<void>;

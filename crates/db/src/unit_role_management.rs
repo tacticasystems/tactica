@@ -35,7 +35,7 @@ pub struct Actor {
 }
 
 impl Actor {
-    fn require_below(&self, position: i64) -> Result<(), RoleWriteError> {
+    pub(crate) fn require_below(&self, position: i64) -> Result<(), RoleWriteError> {
         if self.is_owner
             || self
                 .highest_position

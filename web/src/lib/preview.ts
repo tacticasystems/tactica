@@ -1,3 +1,4 @@
+import { canAssignRanks, canAssignRole, canManageMemberProfiles } from "./permissions";
 import type { Member, Rank, Role, Unit, UnitDataSource } from "./types";
 
 export const previewUnit: Unit = {
@@ -28,6 +29,7 @@ const members: Member[] = roster.map(([name, , abbreviation], index) => ({
   display_name: name,
   icon_url: null,
   role_ids: ["everyone"],
+  unit_display_name: null,
 }));
 
 let ranks: Rank[] = Array.from(
@@ -81,6 +83,10 @@ const copy = <T>(value: T): Promise<T> => Promise.resolve(structuredClone(value)
 const bindings = new Map<string, Set<string>>();
 
 export const previewApi: UnitDataSource = {
+  member: (_unitId, memberId) => {
+    const member = membersWithRoles().find((item) => item.id === memberId);
+    return member ? copy(member) : Promise.reject(new Error("This member no longer exists."));
+  },
   allMembers: () => copy(membersWithRoles()),
   roleMembers: (_unitId, roleId) =>
     copy(
@@ -88,6 +94,52 @@ export const previewApi: UnitDataSource = {
         ? members.map((member) => member.id)
         : [...(bindings.get(roleId) ?? [])],
     ),
+  async saveMember(unitId, memberId, input) {
+    const member = members.find((item) => item.id === memberId);
+    if (!member) throw new Error("This member no longer exists.");
+    const access = await previewApi.access(unitId);
+    if (input.display_name !== undefined && !canManageMemberProfiles(access))
+      throw new Error("Manage member profiles is required.");
+    if (
+      input.rank_id &&
+      (!canAssignRanks(access) || !ranks.some((rank) => rank.id === input.rank_id))
+    )
+      throw new Error("This rank cannot be assigned.");
+    const current = membersWithRoles().find((item) => item.id === memberId)!;
+    if (input.role_ids) {
+      for (const id of input.role_ids) {
+        if (!roles.some((role) => role.id === id && role.kind !== "everyone"))
+          throw new Error("This role cannot be assigned.");
+      }
+      for (const role of roles.filter((role) => role.kind !== "everyone")) {
+        if (
+          current.role_ids.includes(role.id) !== input.role_ids.includes(role.id) &&
+          !canAssignRole(access, role)
+        )
+          throw new Error("This role cannot be changed.");
+      }
+    }
+    if (input.display_name !== undefined) {
+      member.unit_display_name = input.display_name?.trim() || null;
+      member.display_name =
+        member.unit_display_name ?? roster[Number(member.id.replace("member-", ""))][0];
+    }
+    if (input.rank_id) member.rank_id = input.rank_id;
+    if (input.role_ids) {
+      for (const role of roles.filter((role) => role.kind !== "everyone")) {
+        const ids = bindings.get(role.id) ?? new Set<string>();
+        if (input.role_ids.includes(role.id)) ids.add(memberId);
+        else ids.delete(memberId);
+        bindings.set(role.id, ids);
+      }
+    }
+  },
+  async setMemberRank(_unitId, memberId, rankId) {
+    const member = members.find((item) => item.id === memberId);
+    if (!member || !ranks.some((rank) => rank.id === rankId))
+      throw new Error("This rank or member no longer exists.");
+    member.rank_id = rankId;
+  },
   async setRoleMember(_unitId, roleId, memberId, assigned) {
     if (
       !roles.some((role) => role.id === roleId) ||

@@ -1,6 +1,6 @@
 use crate::{NewUnitRank, RoleWriteError, StoreError, UnitRank, UnitRankPatch};
 use async_trait::async_trait;
-use tactica_uuid_kinds::{RankId, UnitId, UserId};
+use tactica_uuid_kinds::{MemberId, RankId, UnitId, UserId};
 
 #[derive(Debug, thiserror::Error)]
 pub enum RankWriteError {
@@ -39,6 +39,14 @@ impl From<diesel::result::Error> for RankWriteError {
 #[async_trait]
 #[cfg_attr(feature = "mock", mockall::automock)]
 pub trait UnitRankManagementStore {
+    /// Assign any rank in the unit using live `AssignRanks` permission, without a rank hierarchy check.
+    async fn set_member_rank(
+        &self,
+        actor_id: UserId,
+        unit_id: UnitId,
+        member_id: MemberId,
+        rank_id: RankId,
+    ) -> Result<(), RankWriteError>;
     async fn create_managed_rank(
         &self,
         actor_id: UserId,

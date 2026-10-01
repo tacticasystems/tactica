@@ -8,10 +8,48 @@ use tactica_db_model::{
 };
 use tactica_db_schema::schema::{unit_memberships, unit_ranks, unit_settings};
 use tactica_permissions::Permission;
-use tactica_uuid_kinds::{RankId, UnitId, UserId};
+use tactica_uuid_kinds::{MemberId, RankId, UnitId, UserId};
 
 #[async_trait]
 impl UnitRankManagementStore for PgConnection {
+    async fn set_member_rank(
+        &self,
+        actor_id: UserId,
+        unit_id: UnitId,
+        member_id: MemberId,
+        rank_id: RankId,
+    ) -> Result<(), RankWriteError> {
+        self.conn()
+            .await
+            .map_err(StoreError::from)?
+            .transaction::<_, RankWriteError, _>(async move |conn| {
+                authorize(conn, actor_id, unit_id, Permission::AssignRanks).await?;
+                unit_ranks::table
+                    .find(rank_id.as_uuid())
+                    .filter(unit_ranks::unit_id.eq(unit_id.as_uuid()))
+                    .first::<UnitRank>(conn)
+                    .await
+                    .optional()?
+                    .ok_or(RankWriteError::NotFound)?;
+                let changed = update(
+                    unit_memberships::table
+                        .find(member_id.as_uuid())
+                        .filter(unit_memberships::unit_id.eq(unit_id.as_uuid())),
+                )
+                .set((
+                    unit_memberships::rank_id.eq(rank_id.as_uuid()),
+                    unit_memberships::updated_at.eq(chrono::Utc::now()),
+                ))
+                .execute(conn)
+                .await?;
+                if changed == 0 {
+                    return Err(RankWriteError::NotFound);
+                }
+                Ok(())
+            })
+            .await
+    }
+
     async fn create_managed_rank(
         &self,
         actor_id: UserId,

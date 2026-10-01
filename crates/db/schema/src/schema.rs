@@ -104,6 +104,7 @@ table! {
         // audit
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
+        display_name -> Nullable<Text>,
     }
 }
 

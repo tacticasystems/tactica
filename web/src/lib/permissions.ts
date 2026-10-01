@@ -19,12 +19,11 @@ export const permissionDefinitions = [
     label: "Manage ranks",
     description: "Create, edit, delete, and reorder ranks.",
   },
-  { bit: 32, label: "Assign ranks", description: "Change member ranks.", future: true },
+  { bit: 32, label: "Assign ranks", description: "Change member ranks." },
   {
     bit: 64,
     label: "Manage member profiles",
     description: "Edit member profile display fields.",
-    future: true,
   },
 ];
 
@@ -62,4 +61,12 @@ export function canGrant(access: Access, bit: number) {
 
 export function canManageRanks(access: Access) {
   return access.is_owner || (access.permissions & 17) !== 0;
+}
+
+export function canAssignRanks(access: Access) {
+  return access.is_owner || (access.permissions & 33) !== 0;
+}
+
+export function canManageMemberProfiles(access: Access) {
+  return access.is_owner || (access.permissions & 65) !== 0;
 }

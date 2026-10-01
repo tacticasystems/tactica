@@ -158,7 +158,13 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
               <>
                 {links.map(({ page, title, icon: Icon }) => (
                   <SidebarMenuItem key={page}>
-                    <SidebarMenuButton asChild isActive={location.pathname.endsWith(`/${page}`)}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={
+                        location.pathname.endsWith(`/${page}`) ||
+                        (page === "personnel" && location.pathname.includes("/personnel/"))
+                      }
+                    >
                       <Link
                         to={`/units/$unitId/${page}`}
                         params={{ unitId: unit.id }}

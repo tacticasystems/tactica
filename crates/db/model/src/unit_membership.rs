@@ -26,6 +26,9 @@ pub struct UnitMembership {
     pub created_at: DateTime<Utc>,
     #[partial(NewUnitMembership(skip))]
     pub updated_at: DateTime<Utc>,
+
+    #[partial(NewUnitMembership(skip))]
+    pub display_name: Option<String>,
 }
 
 #[derive(Debug, Default)]

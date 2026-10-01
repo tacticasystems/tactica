@@ -21,12 +21,13 @@ principals and non-member superusers do not bypass this rule.
 | Method | Path | Response |
 | --- | --- | --- |
 | GET | `/api/v1/units/{unit_id}/members` | `{ "members": [MemberSummary] }` |
+| GET | `/api/v1/units/{unit_id}/members/{member_id}` | `MemberSummary` |
 | GET | `/api/v1/units/{unit_id}/ranks` | `{ "ranks": [RankSummary] }` |
 | GET | `/api/v1/units/{unit_id}/roles` | `{ "roles": [RoleSummary] }` |
 | GET | `/api/v1/units/{unit_id}/members/{member_id}/roles` | `{ "role_ids": [UUID] }` |
 | GET | `/api/v1/units/{unit_id}/roles/{role_id}/members` | `{ "member_ids": [UUID] }` |
 
-- `MemberSummary`: `id`, `user_id`, `unit_id`, `rank_id`, `username`, `display_name`, `icon_url`, `role_ids`.
+- `MemberSummary`: `id`, `user_id`, `unit_id`, `rank_id`, `username`, `display_name`, `unit_display_name`, `icon_url`, `role_ids`.
 - `RankSummary`: `id`, `unit_id`, `slug`, `display_name`, `icon_url`, `description`, `position`.
 - `RoleSummary`: `id`, `unit_id`, `display_name`, `description`, `permissions`, `position`, `kind`.
 
@@ -34,7 +35,9 @@ The member-role response contains role IDs that clients can resolve from
 the unit's role listing. It always includes the implicit Everyone role for a
 current member (subject to pagination), alongside explicit role assignments. A member must belong to the unit in the URL. A member
 from another unit returns 404, even when the caller belongs to both units.
-User email addresses and authentication fields are never included in the roster.
+The single-member endpoint returns the same public fields as the roster, with
+all assigned roles and implicit Everyone. Missing or cross-unit members return
+404. User email addresses and authentication fields are never included.
 Roster `role_ids` include all explicit roles and implicit Everyone, ordered
 highest first. Assignments are loaded in one batch for the roster page.
 
@@ -146,9 +149,8 @@ membership or from holding all ordinary bits: Administrator is a separate bit.
 Unknown bits and negative masks are rejected. The shared `tactica-permissions`
 crate is re-exported by `tactica_api_types::v1::roles` for Rust clients.
 
-`ManageUnit`, `AssignRanks`, and `ManageMembers` are defined for
-future write endpoints. `ManageMembers` does not mean kick, ban, or manage role
-assignments. The currently implemented writes enforce ManageRoles/AssignRoles/ManageRanks.
+`ManageUnit` is defined for future write endpoints. `ManageMembers` does not mean kick, ban, or manage role
+assignments. The currently implemented writes enforce ManageRoles/AssignRoles/ManageRanks/AssignRanks/ManageMembers.
 
 Higher `position` values rank above lower values. Each unit has a unique order.
 A member can edit, delete, assign, remove, or reorder only roles **strictly
@@ -187,10 +189,9 @@ The permission/order migration assumes an empty, undeployed database. Apply it
 before using the new permission checks. It also constrains database permission
 masks and role positions.
 
-The next endpoint batch can use the remaining bits for unit profile/settings,
-rank assignment, and member display fields. Member onboarding
-and removal need separate rules, plus ownership transfer and protection against
-removing the owner.
+The next endpoint batch can use the remaining bits for unit profile/settings
+and member display fields. Member onboarding and removal need separate rules,
+plus ownership transfer and protection against removing the owner.
 
 ## Rank management
 
@@ -199,7 +200,7 @@ deletion, and reordering require the `ManageRanks` (16) permission from roles.
 Administrator and the unit owner's existing implicit authority also allow these
 writes, but membership is still required. Rank position does not grant authority
 or impose a role hierarchy on rank edits. `AssignRanks` alone cannot manage rank
-definitions; assigning members to ranks remains a separate future endpoint.
+definitions; `ManageRanks` alone cannot assign ranks to members.
 
 | Method | Path | Response |
 | --- | --- | --- |
@@ -279,3 +280,46 @@ using these endpoints. Consumed token hashes must be retained until their
 session expires to detect replay. Expired sessions may be pruned by deleting
 `refresh_sessions` rows with `expires_at <= CURRENT_TIMESTAMP`; their token
 hashes cascade. Automated pruning is not included in this change.
+
+### Member rank assignment
+
+`PUT /api/v1/units/{unit_id}/members/{member_id}/rank` accepts
+`{"rank_id": "<rank UUID>"}` and returns 204. It replaces the member's single
+rank; assigning their current rank again succeeds without changing membership.
+
+The caller needs `AssignRanks` (32), Administrator, or unit ownership. There is
+no rank hierarchy restriction: an authorized caller can assign any rank in the
+unit, including to themselves. Both the target member and rank must belong to
+the URL's unit. Missing or cross-unit targets return 404, missing permission or
+membership returns 403, and unauthenticated requests return 401. Invalid bodies
+are rejected, including missing/null rank IDs and unknown fields.
+
+Authorization and assignment run in one transaction under the same unit row
+lock as rank and role management. Live permission revocation applies to the
+next request. Use `UnitRankManagementStore::set_member_rank` for this operation;
+trusted membership CRUD does not perform these authorization checks.
+
+### Member profile and role editing
+
+`PATCH /api/v1/units/{unit_id}/members/{member_id}` saves any combination of:
+
+- `display_name`: a unit-specific name, requiring `ManageMembers` (64). Omit to
+  preserve it; null or whitespace clears the override. Names are trimmed and
+  limited to 100 characters. The account name and other units are unchanged.
+- `rank_id`: a rank from this unit, requiring `AssignRanks` (32).
+- `role_ids`: the complete list of explicit role IDs, requiring `AssignRoles`
+  (8). Everyone is implicit and must be excluded. Changed roles must be below
+  the caller’s highest role unless the caller owns the unit. Existing roles
+  above that position may be preserved.
+
+Administrator expands permissions but still follows role hierarchy. Owners
+have the existing permission and hierarchy override. All permissions and
+hierarchy checks run before mutation under the shared unit lock. Changes commit
+atomically and return 204; a rejected name, rank, or role saves nothing. Empty
+patches, duplicate role IDs, and unknown fields are rejected. Foreign members,
+ranks, and roles return 404.
+
+Member reads return `unit_display_name` for the raw override. `display_name`
+resolves the override followed by the account display name; clients fall back
+to `username` if both are null. Apply migration
+`20261001180000_member_display_name` before starting this API version.

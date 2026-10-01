@@ -12,6 +12,7 @@ import { sessionSnapshot } from "./lib/api";
 import { Button } from "./components/ui/button";
 import { AuthPage } from "./pages/auth";
 import { UnitsPage } from "./pages/units";
+import { MemberPage } from "./pages/member";
 import { PersonnelPage } from "./pages/personnel";
 import { RanksPage } from "./pages/ranks";
 import { RolesPage } from "./pages/roles";
@@ -77,6 +78,16 @@ const personnel = createRoute({
   path: "/personnel",
   component: PersonnelPage,
 });
+const member = createRoute({
+  getParentRoute: () => unit,
+  path: "/personnel/$memberId",
+  component: MemberPage,
+});
+const editMember = createRoute({
+  getParentRoute: () => unit,
+  path: "/personnel/$memberId/edit",
+  component: () => <MemberPage editing />,
+});
 const roles = createRoute({
   getParentRoute: () => unit,
   path: "/roles",
@@ -105,7 +116,7 @@ export const router = createRouter({
     login,
     register,
     units,
-    unit.addChildren([unitIndex, overview, personnel, ranks, roles, profile]),
+    unit.addChildren([unitIndex, overview, personnel, member, editMember, ranks, roles, profile]),
   ]),
   defaultPreload: "intent",
 });
