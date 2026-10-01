@@ -108,7 +108,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
         </p>
         <div className="auth-preview">
           <span>Take a look around first.</span>
-          <Link to="/units/$unitId/personnel" params={{ unitId: "preview" }}>
+          <Link to="/units/$unitId/overview" params={{ unitId: "preview" }}>
             Explore the 9 Rifles preview <ArrowRight size={15} />
           </Link>
         </div>

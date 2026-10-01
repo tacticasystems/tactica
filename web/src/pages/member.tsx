@@ -40,8 +40,8 @@ export function MemberPage({ editing = false }: { editing?: boolean }) {
   });
   const back = (
     <Button asChild variant="ghost">
-      <Link to="/units/$unitId/personnel" params={{ unitId: unit.id }}>
-        <ArrowLeft size={16} aria-hidden="true" /> Personnel
+      <Link to="/units/$unitId/members" params={{ unitId: unit.id }}>
+        <ArrowLeft size={16} aria-hidden="true" /> Members
       </Link>
     </Button>
   );
@@ -59,7 +59,7 @@ export function MemberPage({ editing = false }: { editing?: boolean }) {
           action={back}
         />
         <EmptyState title="This member is no longer available">
-          Return to Personnel to see the current roster.
+          Return to Members to see the current roster.
         </EmptyState>
       </>
     );
@@ -99,7 +99,7 @@ export function MemberPage({ editing = false }: { editing?: boolean }) {
         action={
           editing ? (
             <Button asChild variant="ghost">
-              <Link to="/units/$unitId/personnel/$memberId" params={params}>
+              <Link to="/units/$unitId/members/$memberId" params={params}>
                 <ArrowLeft size={16} aria-hidden="true" /> View member
               </Link>
             </Button>
@@ -178,7 +178,7 @@ export function MemberPage({ editing = false }: { editing?: boolean }) {
             {editable && (
               <footer className="editor-footer">
                 <Button asChild variant="outline">
-                  <Link to="/units/$unitId/personnel/$memberId/edit" params={params}>
+                  <Link to="/units/$unitId/members/$memberId/edit" params={params}>
                     <Pencil size={16} aria-hidden="true" /> Edit member
                   </Link>
                 </Button>

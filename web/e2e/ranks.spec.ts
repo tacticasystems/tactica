@@ -453,7 +453,7 @@ test("personnel ranks deep-link for ordinary members and survive reload and hist
   page,
 }) => {
   await workspace(page, 0);
-  await page.goto("/units/unit/personnel");
+  await page.goto("/units/unit/members");
   const link = page.getByRole("link", { name: "Private", exact: true }).first();
   await expect(link).toHaveAttribute("href", "/units/unit/ranks/private");
   await link.click();
@@ -514,13 +514,13 @@ for (const permissions of [0, 16, 8]) {
     page,
   }) => {
     const { writes } = await workspace(page, permissions);
-    await page.goto("/units/unit/personnel");
+    await page.goto("/units/unit/members");
     await expect(page.getByRole("button", { name: /Change rank/ })).toHaveCount(0);
     await page.getByRole("link", { name: /Person 0$/, exact: true }).click();
-    await expect(page).toHaveURL(/personnel\/member-0$/);
+    await expect(page).toHaveURL(/members\/member-0$/);
     await expect(page.getByRole("heading", { name: "Person 0", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Edit member", exact: true })).toHaveCount(0);
-    await page.goto("/units/unit/personnel/member-0/edit");
+    await page.goto("/units/unit/members/member-0/edit");
     await expect(page.getByRole("combobox", { name: "Rank", exact: true })).toBeDisabled();
     await expect(page.getByRole("button", { name: "Save changes", exact: true })).toHaveCount(0);
     expect(writes).toEqual([]);
@@ -560,7 +560,7 @@ test("member view and edit keep the roster compact and refresh rank tabs", async
   await form.getByRole("combobox").click();
   await page.getByRole("option", { name: "Major", exact: true }).click();
   await form.getByRole("button", { name: "Save changes", exact: true }).click();
-  await expect(page).toHaveURL(/personnel\/member-0$/);
+  await expect(page).toHaveURL(/members\/member-0$/);
   await page.getByRole("link", { name: "Major", exact: true }).click();
   await page.getByRole("tab", { name: "Members", exact: true }).click();
   await expect(page.getByText("2 members have this rank.")).toBeVisible();
@@ -576,7 +576,7 @@ test("member view and edit keep the roster compact and refresh rank tabs", async
 
 test("member edit recovers a lost response and handles permission revocation", async ({ page }) => {
   const { state } = await workspace(page, 32);
-  await page.goto("/units/unit/personnel/member-0/edit");
+  await page.goto("/units/unit/members/member-0/edit");
   const form = page.getByRole("form", { name: "Edit Person 0", exact: true });
   await form.getByRole("combobox").click();
   await page.getByRole("option", { name: "Major", exact: true }).click();
@@ -596,7 +596,7 @@ test("member edit recovers a lost response and handles permission revocation", a
 
 test("member pages reload directly and protect drafts when navigating away", async ({ page }) => {
   const { writes } = await workspace(page, 32);
-  await page.goto("/units/unit/personnel/member-104");
+  await page.goto("/units/unit/members/member-104");
   await expect(page.getByRole("heading", { name: "Person 104", exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("link", { name: "Major", exact: true })).toBeVisible();
@@ -617,10 +617,10 @@ test("member pages reload directly and protect drafts when navigating away", asy
 
 test("member pages handle missing members and retry failed reads", async ({ page }) => {
   const { state } = await workspace(page);
-  await page.goto("/units/unit/personnel/missing");
+  await page.goto("/units/unit/members/missing");
   await expect(page.getByRole("heading", { name: "Member not found", exact: true })).toBeVisible();
   state.failMember = true;
-  await page.goto("/units/unit/personnel/member-0");
+  await page.goto("/units/unit/members/member-0");
   await expect(page.getByRole("alert")).toContainText("Could not load member.");
   state.failMember = false;
   await page.getByRole("button", { name: "Try again", exact: true }).click();
@@ -658,7 +658,7 @@ test("member editor saves display name and roles together with rank", async ({ p
       description: null,
     },
   ];
-  await page.goto("/units/unit/personnel/member-0/edit");
+  await page.goto("/units/unit/members/member-0/edit");
   await expect(page.getByRole("checkbox", { name: /Administrator/ })).toBeDisabled();
   await page.getByRole("textbox", { name: "Display name", exact: true }).fill("Dr. Example");
   await page.getByRole("checkbox", { name: /Medic/ }).check();
@@ -689,7 +689,7 @@ test("member editor saves display name and roles together with rank", async ({ p
 
 test("profile manager can edit only the display name", async ({ page }) => {
   await workspace(page, 64);
-  await page.goto("/units/unit/personnel/member-0");
+  await page.goto("/units/unit/members/member-0");
   await page.getByRole("link", { name: "Edit member", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Display name" })).toBeEditable();
   await expect(page.getByRole("combobox", { name: "Rank" })).toBeDisabled();
@@ -716,7 +716,7 @@ test("rank directory searches, views members, and opens the selected admin edito
   await expect(page.getByText("104 members have this rank.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Person 0", exact: true })).toHaveAttribute(
     "href",
-    "/units/unit/personnel/member-0",
+    "/units/unit/members/member-0",
   );
   await page.getByRole("tab", { name: "Details", exact: true }).click();
   await page.getByRole("link", { name: "Edit rank", exact: true }).click();
@@ -773,7 +773,7 @@ for (const resource of ["members/member-0", "ranks", "roles", "access"]) {
         description: null,
       },
     ];
-    await page.goto("/units/unit/personnel/member-0/edit");
+    await page.goto("/units/unit/members/member-0/edit");
     await page
       .getByRole("textbox", { name: "Display name", exact: true })
       .fill("Local member draft");
@@ -810,7 +810,7 @@ test("committed member drafts reconcile before later server changes", async ({ p
       description: null,
     },
   ];
-  await page.goto("/units/unit/personnel/member-0/edit");
+  await page.goto("/units/unit/members/member-0/edit");
   await page.getByRole("textbox", { name: "Display name", exact: true }).fill("  Saved name  ");
   await page.getByRole("combobox").click();
   await page.getByRole("option", { name: "Major", exact: true }).click();

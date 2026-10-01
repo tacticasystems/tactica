@@ -20,7 +20,7 @@ export function OverviewPage() {
       </section>
       {unit.biography && <p className="unit-biography">{unit.biography}</p>}
       <div className="overview-links">
-        <Link to="/units/$unitId/personnel" params={{ unitId: unit.id }}>
+        <Link to="/units/$unitId/members" params={{ unitId: unit.id }}>
           <div>
             <h2>Personnel</h2>
             <p>View the unit roster and organizational ranks.</p>

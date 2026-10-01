@@ -135,7 +135,7 @@ test("assignments, removals and deletion update the persisted roster", async ({
     .getByRole("button", { name: `Add ${workspace.username} to Medic`, exact: true })
     .click();
   await expect(page.getByRole("status").filter({ hasText: "added to Medic" })).toBeVisible();
-  await page.goto(`/units/${workspace.unitId}/personnel`);
+  await page.goto(`/units/${workspace.unitId}/members`);
   const pills = page.getByRole("list", { name: `${workspace.username} roles`, exact: true });
   await expect(pills.getByRole("link", { name: "Medic", exact: true })).toBeVisible();
   await page.reload();
@@ -164,7 +164,7 @@ test("assignments, removals and deletion update the persisted roster", async ({
     .getByRole("button", { name: "Delete role", exact: true })
     .click();
   await expect(page.getByRole("alertdialog")).toBeHidden();
-  await page.goto(`/units/${workspace.unitId}/personnel`);
+  await page.goto(`/units/${workspace.unitId}/members`);
   await expect(page.getByRole("table")).toBeVisible();
   await expect(pills.getByRole("link", { name: "Medic", exact: true })).toHaveCount(0);
   const { members } = await apiGet(page, request, `/units/${workspace.unitId}/members`);
@@ -207,7 +207,7 @@ test("another account cannot read or edit a unit's roster and roles", async ({
   await signOut(page, isMobile);
   const outsider = credentials();
   await register(page, outsider.username);
-  await page.goto(`/units/${workspace.unitId}/personnel`);
+  await page.goto(`/units/${workspace.unitId}/members`);
   await expect(
     page.getByRole("heading", { name: "This unit is for its members", exact: true }),
   ).toBeVisible();

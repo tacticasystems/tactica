@@ -49,7 +49,7 @@ export function PersonnelPage() {
   return (
     <>
       <PageHeading
-        title="Personnel"
+        title="Members"
         description={`The ${unit.display_name} roster.`}
         action={
           <label className="search-input">

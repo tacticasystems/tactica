@@ -56,7 +56,7 @@ export function PersonnelTable({
                     <div className="flex flex-col gap-1">
                       <Link
                         className="member-profile-link"
-                        to="/units/$unitId/personnel/$memberId"
+                        to="/units/$unitId/members/$memberId"
                         params={{ unitId, memberId: member.id }}
                       >
                         <strong>{rank?.slug}</strong>

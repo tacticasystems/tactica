@@ -153,7 +153,7 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
       children: [
         {
           title: "Members",
-          to: "/units/$unitId/personnel",
+          to: "/units/$unitId/members",
         },
         {
           title: "Ranks",
@@ -161,6 +161,25 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
         },
       ],
     },
+    {
+      group: "administration",
+      title: "Administration",
+      icon: <Settings />,
+      children: [
+        {
+          title: "Profile",
+          to: "/units/$unitId/profile",
+        },
+        {
+          title: "Ranks",
+          to: "/units/$unitId/admin/ranks",
+        },
+        {
+          title: "Roles",
+          to: "/units/$unitId/roles",
+        },
+      ],
+    }
   ] as const;
 
   return (
@@ -175,10 +194,10 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
                     <SidebarMenuItem key={link.group}>
                       <Collapsible defaultOpen>
                         <CollapsibleTrigger asChild>
-                          <SidebarMenuButton>
+                          <SidebarMenuButton className="group">
                             {link.icon}
                             <span>{link.title}</span>
-                            <ChevronDown className="administration-chevron" />
+                            <ChevronDown className="ml-auto transition-transform duration-150 group-data-[state=closed]:-rotate-90" />
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
@@ -225,63 +244,6 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
                     </SidebarMenuItem>
                   ),
                 )}
-                <SidebarMenuItem>
-                  <Collapsible defaultOpen className="administration-menu">
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton>
-                        <Settings />
-                        <span>Administration</span>
-                        <ChevronDown className="administration-chevron" />
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            asChild
-                            isActive={location.pathname.endsWith("/profile")}
-                          >
-                            <Link
-                              to="/units/$unitId/profile"
-                              params={{ unitId: unit.id }}
-                              onClick={close}
-                            >
-                              <span>Profile</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            asChild
-                            isActive={location.pathname.endsWith("/admin/ranks")}
-                          >
-                            <Link
-                              to="/units/$unitId/admin/ranks"
-                              params={{ unitId: unit.id }}
-                              onClick={close}
-                            >
-                              <span>Ranks</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            asChild
-                            isActive={location.pathname.endsWith("/roles")}
-                          >
-                            <Link
-                              to="/units/$unitId/roles"
-                              params={{ unitId: unit.id }}
-                              onClick={close}
-                            >
-                              <span>Roles</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </SidebarMenuItem>
               </>
             ) : (
               <SidebarMenuItem>

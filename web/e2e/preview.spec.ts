@@ -2,7 +2,7 @@ import { reorderRole } from "./support/reorder-role";
 import { expect, test } from "@playwright/test";
 
 test("roster search and sidebar disclosure preserve navigation", async ({ page, isMobile }) => {
-  await page.goto("/units/preview/personnel");
+  await page.goto("/units/preview/members");
   await expect(page.getByRole("table")).toBeVisible();
   await expect(page.getByRole("row")).toHaveCount(7);
 
@@ -67,7 +67,7 @@ test("role permissions, dirty changes, deletion and protected roles", async ({ p
 
 test("mobile navigation closes after selecting a page", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/units/preview/personnel");
+  await page.goto("/units/preview/members");
   await page.getByRole("button", { name: "Toggle navigation" }).click();
   await page.getByRole("link", { name: "Roles", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Roles", exact: true })).toBeVisible();

@@ -140,7 +140,7 @@ for (const { label, permissions, owner } of [
     const { state, ids } = await workspace(page, permissions, owner);
     state.assignedRoleId = "admin";
     ids.add("member-0");
-    await page.goto("/units/unit/personnel");
+    await page.goto("/units/unit/members");
     const pill = page
       .getByRole("list", { name: "Person 0 roles", exact: true })
       .getByRole("link", { name: "Administrator", exact: true });
@@ -162,7 +162,7 @@ for (const { label, permissions, owner } of [
 test("role pills stay plain for a member with only Assign roles", async ({ page }) => {
   const { ids } = await workspace(page, 8);
   ids.add("member-0");
-  await page.goto("/units/unit/personnel");
+  await page.goto("/units/unit/members");
   const pills = page.getByRole("list", { name: "Person 0 roles", exact: true });
   await expect(pills.getByRole("listitem")).toHaveText(["Medic"]);
   await expect(pills.getByRole("link")).toHaveCount(0);
@@ -320,7 +320,7 @@ test("role and roster caches refresh after a committed deletion loses its respon
 }, testInfo) => {
   const { ids, state } = await workspace(page, 127, true);
   ids.add("member-0");
-  await page.goto("/units/unit/personnel");
+  await page.goto("/units/unit/members");
   const pills = page
     .getByRole("list", { name: "Person 0 roles", exact: true })
     .getByRole("listitem");
@@ -351,7 +351,7 @@ for (const initiallyAssigned of [false, true]) {
   }, testInfo) => {
     const { ids, state } = await workspace(page);
     if (initiallyAssigned) ids.add("member-0");
-    await page.goto("/units/unit/personnel");
+    await page.goto("/units/unit/members");
     const pills = page
       .getByRole("list", { name: "Person 0 roles", exact: true })
       .getByRole("listitem");

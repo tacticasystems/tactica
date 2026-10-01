@@ -68,7 +68,7 @@ const unitIndex = createRoute({
   path: "/",
   component: () => {
     const { unitId } = unit.useParams();
-    return <Navigate to="/units/$unitId/personnel" params={{ unitId }} replace />;
+    return <Navigate to="/units/$unitId/overview" params={{ unitId }} replace />;
   },
 });
 const overview = createRoute({
@@ -78,17 +78,17 @@ const overview = createRoute({
 });
 const personnel = createRoute({
   getParentRoute: () => unit,
-  path: "/personnel",
+  path: "/members",
   component: PersonnelPage,
 });
 const member = createRoute({
   getParentRoute: () => unit,
-  path: "/personnel/$memberId",
+  path: "/members/$memberId",
   component: MemberPage,
 });
 const editMember = createRoute({
   getParentRoute: () => unit,
-  path: "/personnel/$memberId/edit",
+  path: "/members/$memberId/edit",
   component: () => <MemberPage editing />,
 });
 const roles = createRoute({
