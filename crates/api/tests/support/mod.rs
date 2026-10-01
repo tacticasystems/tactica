@@ -16,6 +16,7 @@ use testcontainers_modules::{
 use tower::ServiceExt;
 
 pub struct ApiFixture {
+    _uploads: tempfile::TempDir,
     _container: testcontainers_modules::testcontainers::ContainerAsync<Postgres>,
     pub storage: PgConnection,
     pub router: Router,
@@ -57,11 +58,13 @@ impl ApiFixture {
         let storage_arc = Arc::new(storage.clone());
         let auth = AuthContext::new(storage_arc.clone(), jwt.clone(), "dGVzdC1zYWx0LW9ubHk")
             .expect("test authentication context");
-        let router = tactica_api::router(tactica_api::state::ApiState::new(
-            storage_arc,
-            Arc::new(auth),
-        ));
+        let uploads = tempfile::tempdir().expect("upload directory");
+        let files = Arc::new(tactica_files::FilesystemStorage::new(uploads.path()).expect("files"));
+        let router = tactica_api::router(
+            tactica_api::state::ApiState::new(storage_arc, Arc::new(auth)).with_file_storage(files),
+        );
         Self {
+            _uploads: uploads,
             _container: container,
             storage,
             router,

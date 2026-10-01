@@ -140,3 +140,20 @@ describe("rotating sessions", () => {
     await expect(client.request("/units/invalid")).rejects.toMatchObject({ status: 400 });
   });
 });
+
+describe("file uploads", () => {
+  it("keeps multipart bodies and browser-generated boundaries after session refresh", async () => {
+    const { store, fetcher } = fixture();
+    const client = new SessionClient(store, fetcher);
+    const body = new FormData();
+    body.append("file", new Blob(["image bytes"], { type: "image/png" }), "icon.png");
+    await client.request("/units/unit/icon", { method: "POST", body });
+    const upload = fetcher.mock.calls.find(([url]) => url === "/api/v1/units/unit/icon");
+    expect(upload?.[1]?.body).toBe(body);
+    const headers = new Headers(upload?.[1]?.headers);
+    expect(headers.get("Authorization")).toBe("Bearer new-access");
+    expect(headers.has("Content-Type")).toBe(false);
+    const refresh = fetcher.mock.calls.find(([url]) => url === "/api/v1/auth/refresh");
+    expect(new Headers(refresh?.[1]?.headers).get("Content-Type")).toBe("application/json");
+  });
+});

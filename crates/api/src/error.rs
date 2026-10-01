@@ -8,6 +8,13 @@ pub type Result<T> = core::result::Result<T, Error>;
 /// An error type for API operations, encapsulating various error scenarios.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("File exceeds upload limit")]
+    PayloadTooLarge,
+    #[error("File uploads are not configured")]
+    UploadsUnavailable,
+    #[error("File storage failed: {0}")]
+    FileStorage(#[from] tactica_files::FileStorageError),
+
     #[error("Not Found")]
     NotFound,
 
@@ -30,7 +37,17 @@ pub enum Error {
 impl IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
         let (status_code, message, code) = match &self {
-            Self::NotFound => (
+            Self::PayloadTooLarge => (
+                axum::http::StatusCode::PAYLOAD_TOO_LARGE,
+                "File exceeds upload limit".to_owned(),
+                "payload_too_large".to_owned(),
+            ),
+            Self::UploadsUnavailable => (
+                axum::http::StatusCode::SERVICE_UNAVAILABLE,
+                "File uploads are not configured".to_owned(),
+                "uploads_unavailable".to_owned(),
+            ),
+            Self::FileStorage(tactica_files::FileStorageError::NotFound) | Self::NotFound => (
                 axum::http::StatusCode::NOT_FOUND,
                 "Resource not found".to_string(),
                 "not_found".to_string(),
@@ -69,11 +86,14 @@ impl IntoResponse for Error {
                 )
             }
 
-            _ => (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                "An internal server error occurred.".to_string(),
-                "internal_server_error".to_string(),
-            ),
+            _ => {
+                tracing::error!(error = ?self, "Internal server error");
+                (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    "An internal server error occurred.".to_string(),
+                    "internal_server_error".to_string(),
+                )
+            }
         };
 
         let error = v1::ApiError {

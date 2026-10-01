@@ -2,8 +2,8 @@ use async_trait::async_trait;
 use diesel::{ExpressionMethods, QueryDsl, delete, dsl::insert_into, update};
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use tactica_db_model::{
-    CreateUnit, CreatedUnit, ListPagination, NewUnit, StoreError, Unit, UnitFilter, UnitRank,
-    UnitStore, role_kind,
+    CreateUnit, CreatedUnit, ListPagination, NewUnit, RoleWriteError, StoreError, Unit, UnitFilter,
+    UnitProfilePatch, UnitRank, UnitStore, role_kind,
 };
 use tactica_db_schema::schema::{unit_memberships, unit_ranks, unit_roles, unit_settings, units};
 use tactica_uuid_kinds::{MemberId, RankId, RoleId, UnitId, UserId};
@@ -12,6 +12,31 @@ use crate::PgConnection;
 
 #[async_trait]
 impl UnitStore for PgConnection {
+    async fn patch_profile(
+        &self,
+        actor_id: UserId,
+        unit_id: UnitId,
+        patch: UnitProfilePatch,
+    ) -> Result<Unit, RoleWriteError> {
+        self.conn()
+            .await
+            .map_err(StoreError::from)?
+            .transaction::<_, RoleWriteError, _>(async move |conn| {
+                crate::unit_role_management::require_unit_permission(
+                    conn,
+                    actor_id,
+                    unit_id,
+                    tactica_permissions::Permission::ManageUnit,
+                )
+                .await?;
+                Ok(update(units::table.find(unit_id.as_uuid()))
+                    .set((patch, units::updated_at.eq(chrono::Utc::now())))
+                    .get_result(conn)
+                    .await?)
+            })
+            .await
+    }
+
     async fn create_with_defaults(&self, input: CreateUnit) -> Result<CreatedUnit, StoreError> {
         let mut conn = self.conn().await?;
         conn.transaction::<_, StoreError, _>(async move |conn| {

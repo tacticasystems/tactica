@@ -1652,3 +1652,27 @@ fieldset {
 .unit-profile-field textarea {
   resize: vertical;
 }
+
+.unit-icon-upload {
+  margin-bottom: 24px;
+}
+
+.unit-icon-upload-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.unit-icon-upload-controls input {
+  flex: 1 1 240px;
+  min-width: 0;
+  height: auto;
+  min-height: 38px;
+}
+
+.unit-icon-upload [role="status"]:not(:empty) {
+  margin-top: 10px;
+  font-size: 13px;
+}

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod auth;
+pub mod files;
 pub mod members;
 pub mod ranks;
 pub mod roles;

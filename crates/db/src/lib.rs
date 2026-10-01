@@ -9,6 +9,7 @@ use diesel_async::{
     },
 };
 
+mod files;
 mod refresh_session;
 mod unit;
 mod unit_member_role;

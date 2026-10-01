@@ -37,7 +37,9 @@ export class SessionClient {
 
   private async send(path: string, init: RequestInit = {}, token?: string) {
     const headers = new Headers(init.headers);
-    if (init.body) headers.set("Content-Type", "application/json");
+    // Let the browser supply the multipart boundary for FormData uploads.
+    if (typeof init.body === "string" && !headers.has("Content-Type"))
+      headers.set("Content-Type", "application/json");
     if (token) headers.set("Authorization", `Bearer ${token}`);
     let response: Response;
     try {

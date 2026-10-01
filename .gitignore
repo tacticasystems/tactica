@@ -8,3 +8,5 @@ web/test-results/
 web/playwright-report/
 web/*.tsbuildinfo
 .impeccable/review/
+
+/uploads/

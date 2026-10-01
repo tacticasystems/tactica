@@ -16,3 +16,5 @@ impl_typed_uuid_kinds!(RoleId);
 impl_typed_uuid_kinds!(MemberId);
 impl_typed_uuid_kinds!(TeamId);
 impl_typed_uuid_kinds!(SlotId);
+
+impl_typed_uuid_kinds!(FileId);

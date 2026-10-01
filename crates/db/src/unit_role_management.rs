@@ -131,6 +131,18 @@ async fn authorize(
     })
 }
 
+/// Check a unit permission while holding the same unit lock as role mutations.
+/// The caller must keep its transaction open until its authorized write finishes.
+pub async fn require_unit_permission(
+    conn: &mut AsyncPgConnection,
+    actor_id: UserId,
+    unit_id: UnitId,
+    required: Permission,
+) -> Result<(), RoleWriteError> {
+    authorize(conn, actor_id, unit_id, required).await?;
+    Ok(())
+}
+
 async fn target_role(
     conn: &mut AsyncPgConnection,
     unit_id: UnitId,

@@ -8,7 +8,7 @@ use tactica_uuid_kinds::{MemberId, RankId, UnitId, UserId};
 #[cfg(feature = "mock")]
 use mockall::automock;
 
-use crate::{ListPagination, StoreError};
+use crate::{ListPagination, RoleWriteError, StoreError};
 
 #[derive(Queryable, Insertable, Selectable, Debug)]
 #[diesel(table_name = units)]
@@ -30,6 +30,16 @@ pub struct Unit {
     pub created_at: DateTime<Utc>,
     #[partial(NewUnit(skip))]
     pub updated_at: DateTime<Utc>,
+}
+
+/// Profile-only changes; omitted fields are preserved, nested None clears a nullable field.
+#[derive(Debug, Default, diesel::AsChangeset)]
+#[diesel(table_name = units)]
+pub struct UnitProfilePatch {
+    pub display_name: Option<String>,
+    pub slug: Option<String>,
+    pub biography: Option<Option<String>>,
+    pub banner_url: Option<Option<String>>,
 }
 
 #[derive(Debug, Default)]
@@ -69,6 +79,15 @@ impl UnitFilter {
 #[async_trait]
 #[cfg_attr(feature = "mock", automock)]
 pub trait UnitStore {
+    /// Atomically authorizes ManageUnit and updates profile fields under the unit lock.
+    /// Ownership, icon URL and creation time cannot be changed through this operation.
+    async fn patch_profile(
+        &self,
+        actor_id: UserId,
+        unit_id: UnitId,
+        patch: UnitProfilePatch,
+    ) -> Result<Unit, RoleWriteError>;
+
     /// Creates a unit, its default ranks and settings, and its owner's
     /// membership atomically.
     async fn create_with_defaults(&self, input: CreateUnit) -> Result<CreatedUnit, StoreError>;

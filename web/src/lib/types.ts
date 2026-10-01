@@ -77,3 +77,10 @@ export interface UnitDataSource {
   /** Role IDs in display order, highest first. */
   reorderRoles(unitId: string, roleIds: string[]): Promise<Role[]>;
 }
+
+export interface UnitProfileInput {
+  display_name?: string;
+  slug?: string;
+  biography?: string | null;
+  banner_url?: string | null;
+}

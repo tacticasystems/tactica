@@ -10,11 +10,22 @@ use crate::error::Error;
 pub struct ApiState {
     storage: Arc<dyn TacticaStorage>,
     auth: Arc<AuthContext>,
+    files: Option<Arc<dyn tactica_files::FileStorage>>,
 }
 
 impl ApiState {
     pub fn new(storage: Arc<dyn TacticaStorage>, auth: Arc<AuthContext>) -> Self {
-        Self { storage, auth }
+        Self {
+            storage,
+            auth,
+            files: None,
+        }
+    }
+
+    #[must_use]
+    pub fn with_file_storage(mut self, files: Arc<dyn tactica_files::FileStorage>) -> Self {
+        self.files = Some(files);
+        self
     }
 
     pub(crate) fn storage(&self) -> Arc<dyn TacticaStorage> {
@@ -102,5 +113,21 @@ impl FromRequestParts<ApiState> for Principal {
                 Error::Unauthorized("Invalid token claims".to_string())
             })?,
         ))
+    }
+}
+
+#[derive(Clone)]
+pub struct Files(pub Arc<dyn tactica_files::FileStorage>);
+impl FromRequestParts<ApiState> for Files {
+    type Rejection = Error;
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        state: &ApiState,
+    ) -> Result<Self, Self::Rejection> {
+        state
+            .files
+            .clone()
+            .map(Self)
+            .ok_or(Error::UploadsUnavailable)
     }
 }

@@ -187,7 +187,7 @@ The permission/order migration assumes an empty, undeployed database. Apply it
 before using the new permission checks. It also constrains database permission
 masks and role positions.
 
-The next endpoint batch can use the remaining bits for unit profile/settings,
+The next endpoint batch can use the remaining bits for unit settings,
 rank management, rank assignment, and member display fields. Member onboarding
 and removal need separate rules, plus ownership transfer and protection against
 removing the owner.
@@ -230,3 +230,165 @@ using these endpoints. Consumed token hashes must be retained until their
 session expires to detect replay. Expired sessions may be pruned by deleting
 `refresh_sessions` rows with `expires_at <= CURRENT_TIMESTAMP`; their token
 hashes cascade. Automated pruning is not included in this change.
+
+
+## Unit profile
+
+In the web app, **Administration → Profile** lets the unit owner, Administrator,
+or a member with **Manage unit** permission edit the display name, unit handle,
+and biography. **Save changes** saves the edited fields; **Cancel**
+restores the saved values. Unsaved edits trigger a confirmation when navigating
+away and a browser warning on reload or close. Failed saves retain the draft,
+and icon or banner uploads do not discard it. Members without permission and preview
+visitors see read-only profile fields.
+
+`PATCH /api/v1/units/{unit_id}` requires bearer authentication and the same
+owner/Administrator/ManageUnit access as icon uploads. Permissions are checked
+again inside the database transaction that updates the profile. A successful
+request returns 200 with the updated `UnitSummary`.
+
+| Field | Validation after trimming surrounding whitespace |
+| --- | --- |
+| `display_name` | String of 1–100 characters, without control characters; cannot be null |
+| `slug` (unit handle) | Unique string of 1–100 lowercase ASCII letters, numbers, and single hyphens; no leading or trailing hyphens; cannot be null |
+| `biography` | Optional string of at most 5,000 characters, without null characters |
+| `banner_url` | Optional HTTPS URL with a host and no credentials, or a path beginning with `/` but not `//`; at most 2,048 bytes, without backslashes or control characters |
+
+Omitted fields remain unchanged. Explicit `null` or a blank string clears
+`biography` or `banner_url`. At least one field must be supplied. Unknown fields
+are rejected: this endpoint only edits the four profile fields above. Icon and
+banner uploads use dedicated controls and endpoints. The web app manages banners through the upload control.
+
+Invalid profile values return 400, missing authentication 401, insufficient
+permission 403, a missing unit 404, and an already-used handle 409. The web form
+shows save feedback and explains handle conflicts or permission loss.
+
+## File uploads
+
+In the web app, open **Administration → Profile**, select an image under
+**Unit icon** or **Unit banner**, and choose **Upload icon** or **Upload banner**.
+Uploading requires unit ownership, Administrator,
+or the **Manage unit** permission. The control shows file validation errors,
+upload progress, and success or failure feedback; a successful upload immediately
+refreshes the displayed icon or banner preview. Uploads save separately from
+**Save changes** and preserve unsaved text in the profile editor above.
+
+For current uploaded artwork, choose **Remove icon** or **Remove banner**, then
+confirm removal or choose **Cancel**. Removal requires the same **Manage unit**
+access as uploading and uses the file DELETE endpoint below. Successful removal
+refreshes the profile preview without discarding unsaved text. If removal fails,
+the confirmation shows the error and lets you retry.
+
+File bytes are stored through `tactica_files::FileStorage`, with filesystem and
+S3 implementations. PostgreSQL stores ownership, filenames, size and content
+metadata; API URLs remain stable across backends. Run the database migrations
+before enabling these routes, including `20261001130000_file_banners` for banner
+uploads.
+
+The executable defaults to `TACTICA_FILE_BACKEND=filesystem` and
+`TACTICA_FILE_ROOT=./uploads`. Use a persistent directory writable only by the
+service account. For S3, set `TACTICA_FILE_BACKEND=s3`, `TACTICA_S3_BUCKET` and
+`TACTICA_S3_REGION`. Supply AWS credentials using the object_store AWS credential
+providers (environment credentials, web identity or instance/container identity).
+The service requires GetObject, PutObject and DeleteObject on `files/*` in the
+existing bucket. Keep the bucket private; downloads pass through the API, so
+bucket CORS and public ACLs are unnecessary. `AWS_ENDPOINT` can select an
+S3-compatible service; use HTTPS outside local testing. Changing the backend
+does not migrate existing objects: copy `files/*` to the new backend first.
+
+All uploads use `multipart/form-data` containing exactly one field named `file`,
+with a filename. Original filenames are metadata, never filesystem paths or S3
+keys. Files use generated IDs under `files/<file_id>` in either backend.
+
+| Method | Path | Access / result |
+| --- | --- | --- |
+| POST | `/api/v1/units/{unit_id}/files` | Active member; 201 file summary |
+| GET | `/api/v1/units/{unit_id}/files?offset=0&limit=10` | Active member; paginated `{ "files": [...] }` |
+| GET | `/api/v1/units/{unit_id}/files/{file_id}` | Active member; attachment download |
+| DELETE | `/api/v1/units/{unit_id}/files/{file_id}` | Uploader or ManageUnit; 204 |
+| POST | `/api/v1/units/{unit_id}/icon` | ManageUnit (including owner); 201 file summary and updates unit `icon_url` |
+| GET | `/api/v1/units/{unit_id}/icon/{file_id}` | Public; PNG icon |
+| POST | `/api/v1/units/{unit_id}/banner` | ManageUnit (including owner); 201 file summary and updates unit `banner_url` |
+| GET | `/api/v1/units/{unit_id}/banner/{file_id}` | Public; PNG banner |
+
+A summary contains `id`, `unit_id`, `uploaded_by`, `filename`, `content_type`,
+`size`, `url`, and `created_at`. Deleting an uploader account preserves unit files
+and artwork, setting `uploaded_by` to null; only unit managers may delete those
+files afterward. Apply `20261001140000_nullable_file_uploader` to enable this policy.
+Its rollback refuses to restore non-null attribution while deleted-account rows remain.
+Attachment downloads require bearer
+authentication, use `application/octet-stream`, `Content-Disposition: attachment`,
+`nosniff` and `private, no-store`. Do not navigate directly to private URLs in a
+browser: fetch them with the session bearer token and download the response blob.
+
+Attachments are limited to 10 MiB. Icons accept PNG, JPEG or WebP up to 2 MiB and
+2048×2048 pixels; they are decoded and re-encoded as PNG, scaled to fit 512×512.
+Banners accept PNG, JPEG or WebP up to 5 MiB and 4096×4096 pixels; they are
+decoded and re-encoded as PNG, scaled to fit 1920×1080 while preserving aspect ratio.
+SVG and invalid images are rejected. Empty files and multiple fields are rejected.
+Upload routes allow an additional 64 KiB of multipart overhead; ordinary API
+requests retain their 1 MiB limit. Oversized requests return 413. Invalid input
+returns 400, missing authentication 401, insufficient access 403, and missing or
+cross-unit file IDs 404. The library's ApiState requires `with_file_storage` to
+enable byte operations; otherwise those endpoints return 503.
+
+Icon and banner writes recheck permissions and update the unit URL and metadata
+atomically. Both are public profile artwork; previous uploads remain available by ID until
+explicitly deleted using the file DELETE route (which requires ManageUnit for
+icons and banners). Deleting the current artwork clears its unit URL; deleting
+old artwork does not clear a newer icon or banner. Icons and banners are excluded
+from attachment lists; retain returned IDs if you need to remove old artwork.
+
+Storage and PostgreSQL cannot share a transaction. A failed metadata write
+triggers object cleanup; deletion removes metadata first, making the object
+inaccessible through the API, then deletes its bytes. Cleanup failures log the
+file ID for retry. Process interruption, request timeout, or unit deletion can
+leave unreferenced objects; operators must periodically reconcile `files/*`
+against the `files` table, allowing a grace period for uploads in progress.
+There is no automated orphan collector or per-unit storage quota yet.
+
+Example (use a current access token):
+
+```sh
+curl -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -F 'file=@report.pdf' \
+  "http://localhost:8080/api/v1/units/$UNIT_ID/files"
+```
+
+
+### Garage
+
+Garage uses the S3 backend with path-style requests. Set these alongside the
+normal API settings (the region must match Garage's `s3_api.s3_region`):
+
+```dotenv
+TACTICA_FILE_BACKEND=s3
+TACTICA_S3_BUCKET=tactica-uploads
+TACTICA_S3_REGION=garage
+AWS_ENDPOINT=https://s3.example.test
+AWS_ACCESS_KEY_ID=<Garage access key ID>
+AWS_SECRET_ACCESS_KEY=<Garage secret key>
+```
+
+Create the bucket and grant the Garage key read/write permissions first. Use
+`AWS_ALLOW_HTTP=true` only for a local HTTP development endpoint. Keep secrets out
+of committed files. See the [Garage quick start](https://garagehq.deuxfleurs.fr/documentation/quick-start/).
+
+### Storage integration tests
+
+`cargo test -p tactica-files` runs a shared storage contract against a temporary
+filesystem directory and a real `dxflrs/garage:v2.3.0` container managed by
+`testcontainers`. Docker must be available, just as for the PostgreSQL tests.
+Garage starts with a single-node layout and a disposable bucket/key, waits for
+its health endpoint, and uses randomly mapped host ports. Tests do not use or
+change the developer's AWS credentials, and containers/directories are removed
+on drop.
+
+Both backends exercise missing reads, idempotent deletion, binary round trips,
+readback through a separate client, replacement, object isolation and empty
+objects. Garage additionally verifies that an invalid secret cannot write and
+that authentication errors are not reported as missing files.
+
+`cargo test -p tactica-api --test files` tests upload limits, icon normalization,
+membership and ownership checks, cross-unit isolation, downloads and icon URL
+updates using PostgreSQL plus filesystem storage.
