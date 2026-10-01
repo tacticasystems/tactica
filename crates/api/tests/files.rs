@@ -472,3 +472,100 @@ async fn banners_are_public_validated_permission_checked_and_update_the_unit() {
         StatusCode::PAYLOAD_TOO_LARGE
     );
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn deleting_an_uploader_preserves_files_and_manager_control() {
+    use tactica_db_model::{NewUnitMemberRole, NewUnitRole, UnitMemberRoleStore, UnitRoleStore};
+    use tactica_uuid_kinds::RoleId;
+    let api = ApiFixture::new().await;
+    let owner = user(&api, "owner").await;
+    let uploader = user(&api, "uploader").await;
+    let other = user(&api, "other").await;
+    let unit = create_unit(&api, owner, "unit").await;
+    let uploader_member = MemberId::new();
+    for (id, user_id) in [(uploader_member, uploader), (MemberId::new(), other)] {
+        UnitMembershipStore::create(
+            &api.storage,
+            NewUnitMembership {
+                id,
+                user_id,
+                unit_id: unit.unit.id,
+                rank_id: unit.owner_rank_id,
+            },
+        )
+        .await
+        .expect("membership");
+    }
+    let role_id = RoleId::new();
+    UnitRoleStore::create(
+        &api.storage,
+        NewUnitRole {
+            id: role_id,
+            unit_id: unit.unit.id,
+            display_name: "Manager".into(),
+            description: None,
+            permissions: 2,
+        },
+    )
+    .await
+    .expect("role");
+    UnitMemberRoleStore::create(
+        &api.storage,
+        NewUnitMemberRole {
+            member_id: uploader_member,
+            role_id,
+            unit_id: unit.unit.id,
+        },
+    )
+    .await
+    .expect("assign");
+    let base = format!("/api/v1/units/{}", unit.unit.id);
+    let mut png = std::io::Cursor::new(Vec::new());
+    image::DynamicImage::new_rgb8(2, 2)
+        .write_to(&mut png, image::ImageFormat::Png)
+        .expect("PNG");
+    let mut uploads = Vec::new();
+    for kind in ["files", "icon", "banner"] {
+        let response = request(
+            &api,
+            "POST",
+            &format!("{base}/{kind}"),
+            Some(uploader),
+            Some(png.get_ref()),
+        )
+        .await;
+        assert_eq!(response.status(), StatusCode::CREATED);
+        let file = json(response).await;
+        assert_eq!(file["uploaded_by"], uploader.to_string());
+        uploads.push(file);
+    }
+    UserStore::delete(&api.storage, uploader)
+        .await
+        .expect("delete uploader without deleting unit files");
+    let list = json(request(&api, "GET", &format!("{base}/files"), Some(owner), None).await).await;
+    assert!(list["files"][0]["uploaded_by"].is_null());
+    for file in uploads {
+        let url = file["url"].as_str().expect("url");
+        assert_eq!(
+            request(&api, "GET", url, Some(other), None).await.status(),
+            StatusCode::OK
+        );
+        let delete_url = format!("{base}/files/{}", file["id"].as_str().expect("id"));
+        assert_eq!(
+            request(&api, "DELETE", &delete_url, Some(other), None)
+                .await
+                .status(),
+            StatusCode::FORBIDDEN
+        );
+        assert_eq!(
+            request(&api, "DELETE", &delete_url, Some(owner), None)
+                .await
+                .status(),
+            StatusCode::NO_CONTENT
+        );
+        assert_eq!(
+            request(&api, "GET", url, Some(owner), None).await.status(),
+            StatusCode::NOT_FOUND
+        );
+    }
+}

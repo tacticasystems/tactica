@@ -154,7 +154,7 @@ table! {
     files (id) {
         id -> Uuid,
         unit_id -> Uuid,
-        uploaded_by -> Uuid,
+        uploaded_by -> Nullable<Uuid>,
         filename -> Text,
         content_type -> Text,
         size -> BigInt,

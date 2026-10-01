@@ -146,7 +146,7 @@ impl FileStore for PgConnection {
                     .await
                     .optional()?
                     .ok_or(RoleWriteError::NotFound)?;
-                if file.is_icon || file.is_banner || file.uploaded_by != actor {
+                if file.is_icon || file.is_banner || file.uploaded_by != Some(actor) {
                     require_unit_permission(conn, actor, unit_id, Permission::ManageUnit).await?;
                 }
                 if file.is_icon {

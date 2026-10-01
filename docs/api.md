@@ -306,7 +306,11 @@ keys. Files use generated IDs under `files/<file_id>` in either backend.
 | GET | `/api/v1/units/{unit_id}/banner/{file_id}` | Public; PNG banner |
 
 A summary contains `id`, `unit_id`, `uploaded_by`, `filename`, `content_type`,
-`size`, `url`, and `created_at`. Attachment downloads require bearer
+`size`, `url`, and `created_at`. Deleting an uploader account preserves unit files
+and artwork, setting `uploaded_by` to null; only unit managers may delete those
+files afterward. Apply `20261001140000_nullable_file_uploader` to enable this policy.
+Its rollback refuses to restore non-null attribution while deleted-account rows remain.
+Attachment downloads require bearer
 authentication, use `application/octet-stream`, `Content-Disposition: attachment`,
 `nosniff` and `private, no-store`. Do not navigate directly to private URLs in a
 browser: fetch them with the session bearer token and download the response blob.

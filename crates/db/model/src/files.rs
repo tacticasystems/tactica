@@ -10,7 +10,7 @@ use tactica_uuid_kinds::{FileId, UnitId, UserId};
 pub struct File {
     pub id: FileId,
     pub unit_id: UnitId,
-    pub uploaded_by: UserId,
+    pub uploaded_by: Option<UserId>,
     pub filename: String,
     pub content_type: String,
     pub size: i64,
