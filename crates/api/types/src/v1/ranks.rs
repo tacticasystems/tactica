@@ -33,7 +33,11 @@ pub struct CreateRankRequest {
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 pub struct UpdateRankRequest {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        deserialize_with = "required_patch",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub slug: Option<String>,
     #[serde(
         default,
@@ -53,6 +57,12 @@ pub struct UpdateRankRequest {
         skip_serializing_if = "Option::is_none"
     )]
     pub description: Option<Option<String>>,
+}
+
+fn required_patch<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<String>, D::Error> {
+    String::deserialize(deserializer).map(Some)
 }
 
 #[expect(

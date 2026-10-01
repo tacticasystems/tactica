@@ -26,6 +26,7 @@ async function workspace(page: Page, permissions = 16) {
   ];
   const state = {
     permissions,
+    failReads: "",
     failOrder: false,
     failMembers: false,
     loseRankResponse: false,
@@ -52,6 +53,10 @@ async function workspace(page: Page, permissions = 16) {
     const url = new URL(request.url());
     const path = url.pathname.replace("/api/v1", "");
     const method = request.method();
+    if (method === "GET" && state.failReads === path) {
+      await route.fulfill({ status: 500, json: { message: "Background refresh failed." } });
+      return;
+    }
     const body =
       method === "POST" || method === "PATCH" || method === "PUT" ? request.postDataJSON() : null;
     if (method !== "GET") {
@@ -727,3 +732,60 @@ test("ordinary members browse ranks without editing and old links open rank view
   await expect(page.getByRole("link", { name: "Edit rank", exact: true })).toHaveCount(0);
   await expect(page.getByRole("textbox")).toHaveCount(0);
 });
+
+for (const resource of ["ranks", "access"]) {
+  test(`rank draft survives failed ${resource} background refresh`, async ({ page }, info) => {
+    const { state } = await workspace(page);
+    await page.getByRole("textbox", { name: /Description/ }).fill("Local rank draft");
+    state.failReads = `/units/unit/${resource}`;
+    await refetchRanks(page);
+    await expect(page.getByRole("alert")).toContainText("Background refresh failed.");
+    await expect(page.getByRole("textbox", { name: /Description/ })).toHaveValue(
+      "Local rank draft",
+    );
+    await page.screenshot({ path: info.outputPath("preserved-draft.png"), fullPage: true });
+    state.failReads = "";
+    await page.getByRole("button", { name: "Try again", exact: true }).click();
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    await page.getByRole("button", { name: /Private Pvt/ }).click();
+    await expect(page.getByRole("alert")).toContainText("unsaved changes");
+  });
+}
+
+for (const resource of ["members/member-0", "ranks", "roles", "access"]) {
+  test(`member draft survives failed ${resource} background refresh`, async ({ page }, info) => {
+    const { state } = await workspace(page, 104);
+    state.roles = [
+      {
+        id: "medic",
+        unit_id: "unit",
+        display_name: "Medic",
+        kind: "custom",
+        position: 1,
+        permissions: 0,
+        description: null,
+      },
+    ];
+    await page.goto("/units/unit/personnel/member-0/edit");
+    await page
+      .getByRole("textbox", { name: "Display name", exact: true })
+      .fill("Local member draft");
+    await page.getByRole("combobox").click();
+    await page.getByRole("option", { name: "Major", exact: true }).click();
+    await page.getByRole("checkbox", { name: "Medic", exact: true }).check();
+    state.failReads = `/units/unit/${resource}`;
+    await refetchRanks(page);
+    await expect(page.getByRole("alert")).toContainText("Background refresh failed.");
+    await expect(page.getByRole("textbox", { name: "Display name", exact: true })).toHaveValue(
+      "Local member draft",
+    );
+    await expect(page.getByRole("combobox")).toHaveText("Major");
+    await expect(page.getByRole("checkbox", { name: "Medic", exact: true })).toBeChecked();
+    await page.screenshot({ path: info.outputPath("preserved-draft.png"), fullPage: true });
+    state.failReads = "";
+    await page.getByRole("button", { name: "Try again", exact: true }).click();
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    await page.getByRole("link", { name: "View member", exact: true }).click();
+    await expect(page.getByRole("alert")).toContainText("unsaved changes");
+  });
+}

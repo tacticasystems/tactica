@@ -131,7 +131,7 @@ export function AdminRanksPage() {
         <LoadingState label="Loading ranks and permissions" />
       </>
     );
-  if (ranks.isError || access.isError)
+  if (!ranks.data || !access.data)
     return (
       <ErrorState
         error={ranks.error ?? access.error}
@@ -156,6 +156,15 @@ export function AdminRanksPage() {
           )
         }
       />
+      {(ranks.isError || access.isError) && (
+        <ErrorState
+          error={ranks.error ?? access.error}
+          retry={() => {
+            void ranks.refetch();
+            void access.refetch();
+          }}
+        />
+      )}
       {notice && (
         <p className="save-notice" role="status">
           {notice}

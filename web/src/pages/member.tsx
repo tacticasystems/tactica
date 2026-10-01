@@ -45,7 +45,12 @@ export function MemberPage({ editing = false }: { editing?: boolean }) {
       </Link>
     </Button>
   );
-  if (member.isError && member.error instanceof ApiError && member.error.status === 404)
+  if (
+    !member.data &&
+    member.isError &&
+    member.error instanceof ApiError &&
+    member.error.status === 404
+  )
     return (
       <>
         <PageHeading
@@ -60,7 +65,7 @@ export function MemberPage({ editing = false }: { editing?: boolean }) {
     );
   if (member.isPending || ranks.isPending || roles.isPending || access.isPending)
     return <LoadingState label="Loading member" />;
-  if (member.isError || ranks.isError || roles.isError || access.isError)
+  if (!member.data || !ranks.data || !roles.data || !access.data)
     return (
       <ErrorState
         error={member.error ?? ranks.error ?? roles.error ?? access.error}
@@ -103,6 +108,17 @@ export function MemberPage({ editing = false }: { editing?: boolean }) {
           )
         }
       />
+      {(member.isError || ranks.isError || roles.isError || access.isError) && (
+        <ErrorState
+          error={member.error ?? ranks.error ?? roles.error ?? access.error}
+          retry={() => {
+            void member.refetch();
+            void ranks.refetch();
+            void roles.refetch();
+            void access.refetch();
+          }}
+        />
+      )}
       <section
         className="role-editor member-page"
         aria-label={editing ? "Edit member details" : "Member details"}

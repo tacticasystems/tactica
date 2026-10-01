@@ -207,6 +207,12 @@ async fn rank_crud_order_validation_and_in_use_protection() {
         .0
         .is_client_error()
     );
+    assert_eq!(
+        request(&api, "PATCH", &path, Some(&token), json!({"slug": null}))
+            .await
+            .0,
+        StatusCode::UNPROCESSABLE_ENTITY,
+    );
     for body in [
         json!({"slug": " "}),
         json!({"position": 0}),
