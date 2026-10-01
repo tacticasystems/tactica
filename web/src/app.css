@@ -685,6 +685,11 @@ a.role-pill:focus-visible {
   font-size: 13px;
 }
 
+.rank-name a:hover,
+.rank-name a:focus-visible {
+  text-decoration: underline;
+}
+
 .rank-abbreviation {
   color: var(--muted-foreground);
   font-size: 11px;
@@ -1409,6 +1414,7 @@ fieldset {
     background: transparent;
     padding: 0;
   }
+  .rank-name > a,
   .rank-name > span:first-of-type {
     max-width: 140px;
   }
@@ -1651,4 +1657,118 @@ fieldset {
 
 .unit-profile-field textarea {
   resize: vertical;
+}
+
+.member-profile-link:hover,
+.member-profile-link:focus-visible {
+  text-decoration: underline;
+}
+.member-page {
+  max-width: 640px;
+}
+.member-page .member-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.member-page .member-identity strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.member-page .member-identity p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+}
+.member-details {
+  display: grid;
+  gap: 24px;
+  margin: 0;
+}
+.member-details dt {
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--muted-foreground);
+  margin-bottom: 8px;
+}
+.member-details dd {
+  margin: 0;
+}
+.member-edit-form {
+  display: grid;
+  gap: 24px;
+}
+.member-edit-form .rank-field {
+  display: grid;
+  gap: 10px;
+}
+.member-edit-form [data-slot="select-trigger"] {
+  width: 100%;
+}
+.member-page > .editor-footer {
+  margin-top: 24px;
+}
+.member-edit-form .editor-footer {
+  margin-top: 0;
+}
+.member-field-help {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.member-role-options {
+  display: grid;
+  gap: 12px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.member-role-options legend {
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 550;
+}
+.member-role-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.member-role-option [data-slot="checkbox"] {
+  margin-top: 2px;
+}
+.member-role-option span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.member-role-option strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 550;
+}
+.member-role-option small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.member-edit-form .rank-field label,
+.role-editor .member-role-options > .member-role-option {
+  margin: 0;
+}
+
+.rank-directory-description {
+  white-space: normal;
+  min-width: 12rem;
+}
+.rank-view {
+  max-width: 52rem;
+}
+.rank-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

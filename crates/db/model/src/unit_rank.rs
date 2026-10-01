@@ -10,6 +10,15 @@ use mockall::automock;
 
 use crate::{ListPagination, StoreError};
 
+#[derive(Debug, Default, diesel::AsChangeset)]
+#[diesel(table_name = unit_ranks)]
+pub struct UnitRankPatch {
+    pub slug: Option<String>,
+    pub display_name: Option<Option<String>>,
+    pub icon_url: Option<Option<String>>,
+    pub description: Option<Option<String>>,
+}
+
 #[derive(Queryable, Insertable, Selectable, Debug)]
 #[diesel(table_name = unit_ranks)]
 #[partial(NewUnitRank)]
@@ -23,6 +32,10 @@ pub struct UnitRank {
     pub display_name: Option<String>,
     pub icon_url: Option<String>,
     pub description: Option<String>,
+
+    /// Higher positions appear first. New ranks start at the bottom.
+    #[partial(NewUnitRank(skip))]
+    pub position: i64,
 
     #[partial(NewUnitRank(skip))]
     pub created_at: DateTime<Utc>,

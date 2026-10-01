@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 import type { Member, Rank, Role } from "../lib/types";
 import { safeImage } from "../lib/utils";
 
@@ -51,16 +53,32 @@ export function PersonnelTable({
                 <TableCell>
                   <div className="member-name">
                     <Avatar name={name} url={member.icon_url} />
-                    <strong>{name}</strong>
-                    {member.display_name && member.display_name !== member.username && (
-                      <span className="member-username">{member.username}</span>
-                    )}
+                    <div className="flex flex-col gap-1">
+                      <Link
+                        className="member-profile-link"
+                        to="/units/$unitId/personnel/$memberId"
+                        params={{ unitId, memberId: member.id }}
+                      >
+                        <strong>{rank?.slug}</strong>
+                        &nbsp;
+                        {name}
+                      </Link>
+                      {member.display_name && member.display_name !== member.username && (
+                        <span className="member-username">{member.username}</span>
+                      )}
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="rank-name">
                     {icon && <img src={icon} alt="" className="rank-icon" />}
-                    <span>{rank?.display_name ?? rank?.slug ?? "Unspecified rank"}</span>
+                    {rank ? (
+                      <Link to="/units/$unitId/ranks/$rankId" params={{ unitId, rankId: rank.id }}>
+                        {rank.display_name ?? rank.slug}
+                      </Link>
+                    ) : (
+                      <span>Unspecified rank</span>
+                    )}
                     {preview && <span className="rank-abbreviation">{rank?.slug}</span>}
                   </div>
                 </TableCell>

@@ -1,4 +1,5 @@
-import type { Member, Role, Unit, UnitDataSource } from "./types";
+import { canAssignRanks, canAssignRole, canManageMemberProfiles } from "./permissions";
+import type { Member, Rank, Role, Unit, UnitDataSource } from "./types";
 
 export const previewUnit: Unit = {
   id: "preview",
@@ -28,7 +29,25 @@ const members: Member[] = roster.map(([name, , abbreviation], index) => ({
   display_name: name,
   icon_url: null,
   role_ids: ["everyone"],
+  unit_display_name: null,
 }));
+
+let ranks: Rank[] = Array.from(
+  new Map(
+    roster.map(([, name, abbreviation]) => [
+      abbreviation,
+      {
+        id: abbreviation,
+        unit_id: "preview",
+        slug: abbreviation,
+        display_name: name,
+        icon_url: null,
+        description: null,
+        position: 0,
+      },
+    ]),
+  ).values(),
+).map((rank, index, all) => ({ ...rank, position: all.length - index - 1 }));
 
 let roles: Role[] = [
   {
@@ -64,6 +83,10 @@ const copy = <T>(value: T): Promise<T> => Promise.resolve(structuredClone(value)
 const bindings = new Map<string, Set<string>>();
 
 export const previewApi: UnitDataSource = {
+  member: (_unitId, memberId) => {
+    const member = membersWithRoles().find((item) => item.id === memberId);
+    return member ? copy(member) : Promise.reject(new Error("This member no longer exists."));
+  },
   allMembers: () => copy(membersWithRoles()),
   roleMembers: (_unitId, roleId) =>
     copy(
@@ -71,6 +94,52 @@ export const previewApi: UnitDataSource = {
         ? members.map((member) => member.id)
         : [...(bindings.get(roleId) ?? [])],
     ),
+  async saveMember(unitId, memberId, input) {
+    const member = members.find((item) => item.id === memberId);
+    if (!member) throw new Error("This member no longer exists.");
+    const access = await previewApi.access(unitId);
+    if (input.display_name !== undefined && !canManageMemberProfiles(access))
+      throw new Error("Manage member profiles is required.");
+    if (
+      input.rank_id &&
+      (!canAssignRanks(access) || !ranks.some((rank) => rank.id === input.rank_id))
+    )
+      throw new Error("This rank cannot be assigned.");
+    const current = membersWithRoles().find((item) => item.id === memberId)!;
+    if (input.role_ids) {
+      for (const id of input.role_ids) {
+        if (!roles.some((role) => role.id === id && role.kind !== "everyone"))
+          throw new Error("This role cannot be assigned.");
+      }
+      for (const role of roles.filter((role) => role.kind !== "everyone")) {
+        if (
+          current.role_ids.includes(role.id) !== input.role_ids.includes(role.id) &&
+          !canAssignRole(access, role)
+        )
+          throw new Error("This role cannot be changed.");
+      }
+    }
+    if (input.display_name !== undefined) {
+      member.unit_display_name = input.display_name?.trim() || null;
+      member.display_name =
+        member.unit_display_name ?? roster[Number(member.id.replace("member-", ""))][0];
+    }
+    if (input.rank_id) member.rank_id = input.rank_id;
+    if (input.role_ids) {
+      for (const role of roles.filter((role) => role.kind !== "everyone")) {
+        const ids = bindings.get(role.id) ?? new Set<string>();
+        if (input.role_ids.includes(role.id)) ids.add(memberId);
+        else ids.delete(memberId);
+        bindings.set(role.id, ids);
+      }
+    }
+  },
+  async setMemberRank(_unitId, memberId, rankId) {
+    const member = members.find((item) => item.id === memberId);
+    if (!member || !ranks.some((rank) => rank.id === rankId))
+      throw new Error("This rank or member no longer exists.");
+    member.rank_id = rankId;
+  },
   async setRoleMember(_unitId, roleId, memberId, assigned) {
     if (
       !roles.some((role) => role.id === roleId) ||
@@ -116,24 +185,40 @@ export const previewApi: UnitDataSource = {
   },
   unit: () => copy(previewUnit),
   members: (_id, offset) => copy(membersWithRoles().slice(offset, offset + 20)),
-  ranks: () =>
-    copy(
-      Array.from(
-        new Map(
-          roster.map(([, name, abbreviation]) => [
-            abbreviation,
-            {
-              id: abbreviation,
-              unit_id: "preview",
-              slug: abbreviation,
-              display_name: name,
-              icon_url: null,
-              description: null,
-            },
-          ]),
-        ).values(),
-      ),
-    ),
+  ranks: () => copy(ranks),
+  async saveRank(_unitId, rankId, input) {
+    if (ranks.some((rank) => rank.id !== rankId && rank.slug === input.slug))
+      throw new Error("A rank with this abbreviation already exists.");
+    const existing = ranks.find((rank) => rank.id === rankId);
+    if (rankId && !existing) throw new Error("This rank no longer exists.");
+    if (existing) {
+      const saved = { ...existing, ...input };
+      ranks = ranks.map((rank) => (rank.id === rankId ? saved : rank));
+      return structuredClone(saved);
+    }
+    const saved: Rank = { ...input, id: crypto.randomUUID(), unit_id: "preview", position: 0 };
+    ranks = [...ranks.map((rank) => ({ ...rank, position: rank.position + 1 })), saved];
+    return structuredClone(saved);
+  },
+  async deleteRank(_unitId, rankId) {
+    if (!ranks.some((rank) => rank.id === rankId)) throw new Error("This rank no longer exists.");
+    if (members.some((member) => member.rank_id === rankId) || rankId === "Rct")
+      throw new Error("Rank is assigned to a member or is the unit's initial rank.");
+    ranks = ranks.filter((rank) => rank.id !== rankId);
+  },
+  async reorderRanks(_unitId, rankIds) {
+    if (
+      rankIds.length !== ranks.length ||
+      new Set(rankIds).size !== ranks.length ||
+      rankIds.some((id) => !ranks.some((rank) => rank.id === id))
+    )
+      throw new Error("The rank list changed. Reload it and try again.");
+    ranks = rankIds.map((id, index) => ({
+      ...ranks.find((rank) => rank.id === id)!,
+      position: rankIds.length - index - 1,
+    }));
+    return structuredClone(ranks);
+  },
   roles: () => copy(roles),
   // Capabilities simulate an editor; they make no claim about the example's owner.
   access: () =>

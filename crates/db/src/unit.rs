@@ -36,6 +36,7 @@ impl UnitStore for PgConnection {
                     unit_ranks::id.eq(owner_rank_id.as_uuid()),
                     unit_ranks::unit_id.eq(unit.id.as_uuid()),
                     unit_ranks::slug.eq("Maj."),
+                    unit_ranks::position.eq(1_i64),
                     unit_ranks::display_name.eq(Some("Major".to_owned())),
                     unit_ranks::description.eq(Some("The owner of the unit".to_owned())),
                 ))
@@ -48,6 +49,7 @@ impl UnitStore for PgConnection {
                     unit_ranks::id.eq(join_rank_id.as_uuid()),
                     unit_ranks::unit_id.eq(unit.id.as_uuid()),
                     unit_ranks::slug.eq("Pvt."),
+                    unit_ranks::position.eq(0_i64),
                     unit_ranks::display_name.eq(Some("Private".to_owned())),
                     unit_ranks::description.eq(Some("The enlisted members".to_owned())),
                 ))

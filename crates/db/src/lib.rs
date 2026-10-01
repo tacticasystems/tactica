@@ -11,9 +11,11 @@ use diesel_async::{
 
 mod refresh_session;
 mod unit;
+mod unit_member_management;
 mod unit_member_role;
 mod unit_membership;
 mod unit_rank;
+mod unit_rank_management;
 mod unit_role;
 mod unit_role_management;
 mod unit_settings;

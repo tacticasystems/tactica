@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronsUpDown,
+  ChevronsUp,
   Home,
   LogOut,
   Settings,
@@ -145,6 +146,7 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
   const links = [
     { page: "overview", title: "Overview", icon: Home },
     { page: "personnel", title: "Personnel", icon: Users },
+    { page: "ranks", title: "Ranks", icon: ChevronsUp },
   ] as const;
 
   return (
@@ -156,7 +158,15 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
               <>
                 {links.map(({ page, title, icon: Icon }) => (
                   <SidebarMenuItem key={page}>
-                    <SidebarMenuButton asChild isActive={location.pathname.endsWith(`/${page}`)}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={
+                        location.pathname === `/units/${unit.id}/${page}` ||
+                        (page === "ranks" &&
+                          location.pathname.startsWith(`/units/${unit.id}/ranks/`)) ||
+                        (page === "personnel" && location.pathname.includes("/personnel/"))
+                      }
+                    >
                       <Link
                         to={`/units/$unitId/${page}`}
                         params={{ unitId: unit.id }}
@@ -193,6 +203,20 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
                               onClick={close}
                             >
                               <span>Profile</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={location.pathname.endsWith("/admin/ranks")}
+                          >
+                            <Link
+                              to="/units/$unitId/admin/ranks"
+                              params={{ unitId: unit.id }}
+                              onClick={close}
+                            >
+                              <span>Ranks</span>
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>

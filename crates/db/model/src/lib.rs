@@ -2,9 +2,11 @@
 
 mod refresh_session;
 mod unit;
+mod unit_member_management;
 mod unit_member_role;
 mod unit_membership;
 mod unit_rank;
+mod unit_rank_management;
 mod unit_role;
 mod unit_role_management;
 mod unit_settings;
@@ -15,9 +17,11 @@ pub use refresh_session::*;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 pub use unit::*;
+pub use unit_member_management::*;
 pub use unit_member_role::*;
 pub use unit_membership::*;
 pub use unit_rank::*;
+pub use unit_rank_management::*;
 pub use unit_role::*;
 pub use unit_role_management::*;
 pub use unit_settings::*;
@@ -29,8 +33,10 @@ pub trait TacticaStorage:
     + RefreshSessionStore
     + UnitStore
     + UnitMembershipStore
+    + UnitMemberManagementStore
     + UnitMemberRoleStore
     + UnitRankStore
+    + UnitRankManagementStore
     + UnitRoleStore
     + UnitRoleManagementStore
     + UnitSettingsStore
@@ -45,8 +51,10 @@ impl<T> TacticaStorage for T where
         + RefreshSessionStore
         + UnitStore
         + UnitMembershipStore
+        + UnitMemberManagementStore
         + UnitMemberRoleStore
         + UnitRankStore
+        + UnitRankManagementStore
         + UnitRoleStore
         + UnitRoleManagementStore
         + UnitSettingsStore

@@ -84,6 +84,8 @@ table! {
         icon_url -> Nullable<Text>,
         description -> Nullable<Text>,
 
+        position -> BigInt,
+
         // audit
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
@@ -102,6 +104,7 @@ table! {
         // audit
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
+        display_name -> Nullable<Text>,
     }
 }
 
