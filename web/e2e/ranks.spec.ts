@@ -106,8 +106,124 @@ async function workspace(page: Page, permissions = 16) {
   });
   await page.goto("/units/unit/ranks");
   await expect(page.getByRole("heading", { name: "Major", exact: true })).toBeVisible();
-  return { state, writes };
+  return {
+    state,
+    writes,
+    updateRank: (id: string, changes: Partial<Rank>) => {
+      ranks = ranks.map((rank) => (rank.id === id ? { ...rank, ...changes } : rank));
+    },
+  };
 }
+
+async function refetchRanks(page: Page) {
+  await page.clock.setSystemTime(new Date((await page.evaluate(() => Date.now())) + 31_000));
+  const response = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/v1/units/unit/ranks" &&
+      response.request().method() === "GET",
+  );
+  await page.evaluate(() => {
+    for (const visibilityState of ["hidden", "visible"]) {
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        value: visibilityState,
+      });
+      window.dispatchEvent(new Event("visibilitychange"));
+    }
+  });
+  await response;
+}
+
+test("unchanged rank fields follow another manager's updates", async ({ page }) => {
+  const { updateRank } = await workspace(page);
+  updateRank("major", {
+    slug: "Cmdr.",
+    display_name: "Commander",
+    icon_url: "https://example.com/commander.svg",
+    description: "Updated responsibilities",
+  });
+  await refetchRanks(page);
+  await expect(page.getByRole("textbox", { name: "Abbreviation", exact: true })).toHaveValue(
+    "Cmdr.",
+  );
+  await expect(page.getByRole("textbox", { name: /Rank name/ })).toHaveValue("Commander");
+  await expect(page.getByRole("textbox", { name: /Icon URL/ })).toHaveValue(
+    "https://example.com/commander.svg",
+  );
+  await expect(page.getByRole("textbox", { name: /Description/ })).toHaveValue(
+    "Updated responsibilities",
+  );
+  await expect(page.getByRole("button", { name: "Save rank", exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: /Private Pvt/ }).click();
+  await expect(page.getByRole("heading", { name: "Private", exact: true })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("refetches preserve local edits and navigation protection without overwriting other fields", async ({
+  page,
+}, info) => {
+  const { updateRank, writes } = await workspace(page);
+  await page.getByRole("textbox", { name: /Description/ }).fill("Local responsibilities");
+  updateRank("major", { display_name: "Commander", description: "Remote responsibilities" });
+  await refetchRanks(page);
+  await expect(page.getByRole("textbox", { name: /Rank name/ })).toHaveValue("Commander");
+  await expect(page.getByRole("textbox", { name: /Description/ })).toHaveValue(
+    "Local responsibilities",
+  );
+  if (info.project.name === "mobile")
+    await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
+  await page.getByRole("link", { name: "Personnel", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("unsaved changes");
+  await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+  await page.getByRole("button", { name: "Save rank", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Save rank", exact: true })).toBeDisabled();
+  expect(writes.at(-1)).toMatchObject({
+    method: "PATCH",
+    body: { display_name: "Commander", description: "Local responsibilities" },
+  });
+});
+
+test("matching server updates clear local edits and the unsaved-changes guard", async ({
+  page,
+}) => {
+  const { updateRank } = await workspace(page);
+  await page.getByRole("textbox", { name: /Rank name/ }).fill("Commander");
+  updateRank("major", { display_name: "Commander" });
+  await refetchRanks(page);
+  await expect(page.getByRole("button", { name: "Save rank", exact: true })).toBeDisabled();
+  updateRank("major", { display_name: "Lieutenant Colonel" });
+  await refetchRanks(page);
+  await expect(page.getByRole("textbox", { name: /Rank name/ })).toHaveValue("Lieutenant Colonel");
+  await expect(page.getByRole("button", { name: "Save rank", exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: /Private Pvt/ }).click();
+  await expect(page.getByRole("heading", { name: "Private", exact: true })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("icon URLs follow the roster's HTTPS or same-origin HTTP policy", async ({ page }) => {
+  const { writes } = await workspace(page);
+  const icon = page.getByRole("textbox", { name: /Icon URL/ });
+  const save = page.getByRole("button", { name: "Save rank", exact: true });
+  await icon.fill("http://example.com/rank.svg");
+  await save.click();
+  await expect(icon).toHaveJSProperty(
+    "validationMessage",
+    "Use an HTTPS URL or an HTTP URL from this site.",
+  );
+  expect(writes).toEqual([]);
+
+  for (const url of ["https://example.com/rank.svg", new URL("/rank.svg", page.url()).href]) {
+    await icon.fill(url);
+    await expect(icon).toHaveJSProperty("validationMessage", "");
+    await save.click();
+    await expect(save).toBeDisabled();
+    expect(writes.at(-1)).toMatchObject({ method: "PATCH", body: { icon_url: url } });
+  }
+  await icon.fill("");
+  await save.click();
+  await expect(save).toBeDisabled();
+  expect(writes.at(-1)).toMatchObject({ method: "PATCH", body: { icon_url: null } });
+});
 
 for (const permissions of [0, 4, 32]) {
   test(`members with permissions ${permissions} see ranks without edit controls`, async ({

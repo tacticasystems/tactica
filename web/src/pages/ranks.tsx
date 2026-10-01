@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
@@ -24,6 +24,7 @@ import {
 } from "../components/ui/alert-dialog";
 import { canManageRanks } from "../lib/permissions";
 import { errorMessage, queryClient } from "../lib/queries";
+import { safeImage } from "../lib/utils";
 import type { Rank, RankInput } from "../lib/types";
 
 export function RanksPage() {
@@ -283,23 +284,47 @@ function RankEditor({
   onCancel: () => void;
   onDelete?: () => void;
 }) {
-  const initial = {
-    slug: rank?.slug ?? "",
-    display_name: rank?.display_name ?? "",
-    icon_url: rank?.icon_url ?? "",
-    description: rank?.description ?? "",
-  };
-  const [draft, setDraft] = useState(initial);
-  const dirty = Object.keys(initial).some(
-    (key) => draft[key as keyof typeof draft] !== initial[key as keyof typeof initial],
+  const initial = useMemo(
+    () => ({
+      slug: rank?.slug ?? "",
+      display_name: rank?.display_name ?? "",
+      icon_url: rank?.icon_url ?? "",
+      description: rank?.description ?? "",
+    }),
+    [rank?.slug, rank?.display_name, rank?.icon_url, rank?.description],
   );
+  // Keep only local overrides so untouched fields always use the latest server values.
+  const [edits, setEdits] = useState<Partial<typeof initial>>({});
+  const draft = { ...initial, ...edits };
+  const iconInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    iconInput.current?.setCustomValidity(
+      draft.icon_url.trim() && !safeImage(draft.icon_url.trim())
+        ? "Use an HTTPS URL or an HTTP URL from this site."
+        : "",
+    );
+  }, [draft.icon_url]);
+  const dirty = Object.entries(edits).some(
+    ([key, value]) => value !== initial[key as keyof typeof initial],
+  );
+  useEffect(() => {
+    setEdits((previous) => {
+      const remaining = Object.fromEntries(
+        Object.entries(previous).filter(
+          ([key, value]) => value !== initial[key as keyof typeof initial],
+        ),
+      );
+      return Object.keys(remaining).length === Object.keys(previous).length ? previous : remaining;
+    });
+  }, [initial]);
+  useEffect(() => onDirty(dirty), [dirty, onDirty]);
   const update = (key: keyof typeof draft, value: string) => {
-    const next = { ...draft, [key]: value };
-    setDraft(next);
+    const next = { ...edits };
+    if (value === initial[key]) delete next[key];
+    else next[key] = value;
+    setEdits(next);
     onDirty(
-      Object.keys(initial).some(
-        (field) => next[field as keyof typeof next] !== initial[field as keyof typeof initial],
-      ),
+      Object.entries(next).some(([field, edit]) => edit !== initial[field as keyof typeof initial]),
     );
   };
   const submit = (event: FormEvent) => {
@@ -356,6 +381,7 @@ function RankEditor({
         </Label>
         <Input
           id="rank-icon"
+          ref={iconInput}
           readOnly={!editable}
           type="url"
           value={draft.icon_url}
@@ -397,7 +423,7 @@ function RankEditor({
               variant="ghost"
               disabled={pending || (!dirty && !!rank)}
               onClick={() => {
-                setDraft(initial);
+                setEdits({});
                 onCancel();
               }}
             >
