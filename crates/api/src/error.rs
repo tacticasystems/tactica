@@ -78,11 +78,14 @@ impl IntoResponse for Error {
                 )
             }
 
-            Self::Store(_) => (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                "An internal server error occurred.".to_string(),
-                "internal_server_error".to_string(),
-            ),
+            Self::Store(err) => {
+                tracing::error!("Internal server error: {:?}", err);
+                (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    "An internal server error occurred.".to_string(),
+                    "internal_server_error".to_string(),
+                )
+            },
         };
 
         let error = v1::ApiError {
