@@ -1,6 +1,6 @@
 import { SiGithub, SiDiscord } from "@icons-pack/react-simple-icons";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   ArrowLeft,
   ChevronDown,
@@ -142,11 +142,26 @@ function UnitSwitcher({ unit, preview }: Pick<WorkspaceSidebarProps, "unit" | "p
 function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
   const { setOpenMobile } = useSidebar();
   const location = useLocation();
+  const currentRouteId = useRouterState({ select: (state) => state.matches.at(-1).routeId });
   const close = () => setOpenMobile(false);
+
   const links = [
-    { page: "overview", title: "Overview", icon: Home },
-    { page: "personnel", title: "Personnel", icon: Users },
-    { page: "ranks", title: "Ranks", icon: ChevronsUp },
+    { page: "overview", title: "Overview", icon: <Home /> },
+    {
+      group: "personnel",
+      title: "Personnel",
+      icon: <Users />,
+      children: [
+        {
+          title: "Members",
+          to: "/units/$unitId/personnel",
+        },
+        {
+          title: "Ranks",
+          to: "/units/$unitId/ranks",
+        },
+      ]
+    },
   ] as const;
 
   return (
@@ -156,31 +171,66 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
           <SidebarMenu className="gap-1">
             {unit ? (
               <>
-                {links.map(({ page, title, icon: Icon }) => (
-                  <SidebarMenuItem key={page}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={
-                        location.pathname === `/units/${unit.id}/${page}` ||
-                        (page === "ranks" &&
-                          location.pathname.startsWith(`/units/${unit.id}/ranks/`)) ||
-                        (page === "personnel" && location.pathname.includes("/personnel/"))
-                      }
-                    >
-                      <Link
-                        to={`/units/$unitId/${page}`}
-                        params={{ unitId: unit.id }}
-                        onClick={close}
-                      >
-                        <Icon />
-                        <span>{title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                    {page === "personnel" && (
-                      <SidebarMenuBadge>{unit.member_count}</SidebarMenuBadge>
-                    )}
-                  </SidebarMenuItem>
-                ))}
+                {links.map(link =>
+                  link.children ?
+                    (
+                      <SidebarMenuItem key={link.group}>
+                        <Collapsible defaultOpen>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuButton>
+                              {link.icon}
+                              <span>{link.title}</span>
+                              <ChevronDown className="administration-chevron" />
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <SidebarMenuSub>
+                              {link.children.map(child => (
+                                <SidebarMenuSubItem key={link.group + "-" + child.to}>
+                                  <SidebarMenuSubButton
+                                    asChild
+                                    isActive={currentRouteId.startsWith(child.to)}
+                                  >
+                                    <Link
+                                      to={child.to}
+                                      params={{ unitId: unit.id }}
+                                      onClick={close}
+                                    >
+                                      <span>{child.title}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
+                            </SidebarMenuSub>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      </SidebarMenuItem>
+                    ) : (
+                      <SidebarMenuItem key={link.page}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={
+                            location.pathname === `/units/${unit.id}/${link.page}` ||
+                            (link.page === "ranks" &&
+                              location.pathname.startsWith(`/units/${unit.id}/ranks/`)) ||
+                            (link.page === "personnel" && location.pathname.includes("/personnel/"))
+                          }
+                        >
+                          <Link
+                            to={`/units/$unitId/${link.page}`}
+                            params={{ unitId: unit.id }}
+                            onClick={link.close}
+                          >
+                            {link.icon}
+                            <span>{link.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                        {link.page === "personnel" && (
+                          <SidebarMenuBadge>{unit.member_count}</SidebarMenuBadge>
+                        )}
+                      </SidebarMenuItem>
+                    )
+                )}
                 <SidebarMenuItem>
                   <Collapsible defaultOpen className="administration-menu">
                     <CollapsibleTrigger asChild>
