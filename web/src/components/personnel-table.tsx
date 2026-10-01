@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 import type { Member, Rank, Role } from "../lib/types";
 import { safeImage } from "../lib/utils";
 
@@ -60,7 +62,17 @@ export function PersonnelTable({
                 <TableCell>
                   <div className="rank-name">
                     {icon && <img src={icon} alt="" className="rank-icon" />}
-                    <span>{rank?.display_name ?? rank?.slug ?? "Unspecified rank"}</span>
+                    {rank ? (
+                      <Link
+                        to="/units/$unitId/ranks"
+                        params={{ unitId }}
+                        search={{ rankId: rank.id }}
+                      >
+                        {rank.display_name ?? rank.slug}
+                      </Link>
+                    ) : (
+                      <span>Unspecified rank</span>
+                    )}
                     {preview && <span className="rank-abbreviation">{rank?.slug}</span>}
                   </div>
                 </TableCell>

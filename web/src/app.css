@@ -685,6 +685,11 @@ a.role-pill:focus-visible {
   font-size: 13px;
 }
 
+.rank-name a:hover,
+.rank-name a:focus-visible {
+  text-decoration: underline;
+}
+
 .rank-abbreviation {
   color: var(--muted-foreground);
   font-size: 11px;
@@ -1409,6 +1414,7 @@ fieldset {
     background: transparent;
     padding: 0;
   }
+  .rank-name > a,
   .rank-name > span:first-of-type {
     max-width: 140px;
   }

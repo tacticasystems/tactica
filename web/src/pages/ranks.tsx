@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useBlocker } from "@tanstack/react-router";
+import { useBlocker, useNavigate, useSearch } from "@tanstack/react-router";
 import { LockKeyhole, Plus, Trash2 } from "lucide-react";
 import { useWorkspace } from "../components/workspace-context";
 import { EmptyState } from "../components/empty-state";
 import { ErrorState } from "../components/error-state";
 import { LoadingState } from "../components/loading-state";
 import { PageHeading } from "../components/page-heading";
+import { RankDetails } from "../components/rank-details";
 import { RankList } from "../components/rank-list";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -39,7 +40,13 @@ export function RanksPage() {
     queryKey: accessKey,
     queryFn: ({ signal }) => source.access(unit.id, signal),
   });
-  const [selected, setSelected] = useState<string | null>(null);
+  const { rankId } = useSearch({ from: "/units/$unitId/ranks" });
+  const navigate = useNavigate({ from: "/units/$unitId/ranks" });
+  const selected = rankId ?? null;
+  const setSelected = (id: string | null) => {
+    // Callers guard selection changes or explicitly save/discard the draft.
+    void navigate({ search: id ? { rankId: id } : {}, ignoreBlocker: true });
+  };
   const [revision, setRevision] = useState(0);
   const [dirty, setDirty] = useState(false);
   const [switchTarget, setSwitchTarget] = useState<string | null>(null);
@@ -50,8 +57,17 @@ export function RanksPage() {
       ? "new"
       : (ranks.data?.find((rank) => rank.id === selected)?.id ?? ranks.data?.[0]?.id);
   const rank = ranks.data?.find((item) => item.id === current);
+  const validSelection = selected === "new" || ranks.data?.some((item) => item.id === selected);
+  useEffect(() => {
+    if (ranks.isSuccess && selected && !validSelection) {
+      void navigate({ search: {}, replace: true, ignoreBlocker: true });
+    }
+  }, [ranks.isSuccess, selected, validSelection, navigate]);
   const blocker = useBlocker({
-    shouldBlockFn: () => dirty,
+    shouldBlockFn: ({ current: location, next }) =>
+      dirty &&
+      (location.pathname !== next.pathname ||
+        ("rankId" in next.search ? next.search.rankId : ranks.data?.[0]?.id) !== current),
     enableBeforeUnload: dirty,
     withResolver: true,
   });
@@ -63,8 +79,8 @@ export function RanksPage() {
       source.saveRank(unit.id, id, input),
     onSuccess: async (saved) => {
       setDirty(false);
-      setSelected(saved.id);
       await queryClient.invalidateQueries({ queryKey: ranksKey });
+      setSelected(saved.id);
       setRevision((value) => value + 1);
       setNotice("Rank saved.");
     },
@@ -197,31 +213,33 @@ export function RanksPage() {
           }}
         />
         {rank || current === "new" ? (
-          <RankEditor
-            key={`${current}-${revision}`}
-            rank={rank}
-            editable={editable}
-            pending={pending}
-            error={save.isError ? errorMessage(save.error, "rank") : ""}
-            onDirty={setDirty}
-            onSave={(input) => {
-              setNotice("");
-              save.mutate({ id: rank?.id ?? null, input });
-            }}
-            onCancel={() => {
-              setDirty(false);
-              setSelected(null);
-              save.reset();
-            }}
-            onDelete={
-              rank && editable
-                ? () => {
-                    remove.reset();
-                    setDeleteTarget(rank);
-                  }
-                : undefined
-            }
-          />
+          <RankDetails rank={rank}>
+            <RankEditor
+              key={`${current}-${revision}`}
+              rank={rank}
+              editable={editable}
+              pending={pending}
+              error={save.isError ? errorMessage(save.error, "rank") : ""}
+              onDirty={setDirty}
+              onSave={(input) => {
+                setNotice("");
+                save.mutate({ id: rank?.id ?? null, input });
+              }}
+              onCancel={() => {
+                setDirty(false);
+                setSelected(null);
+                save.reset();
+              }}
+              onDelete={
+                rank && editable
+                  ? () => {
+                      remove.reset();
+                      setDeleteTarget(rank);
+                    }
+                  : undefined
+              }
+            />
+          </RankDetails>
         ) : (
           <EmptyState title="No ranks yet">
             Members can view ranks here once a rank manager creates them.

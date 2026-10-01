@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test";
 import type { Rank } from "../src/lib/types";
 
 async function workspace(page: Page, permissions = 16) {
-  const unit = { id: "unit", slug: "test", display_name: "Test unit", member_count: 2 };
+  const unit = { id: "unit", slug: "test", display_name: "Test unit", member_count: 105 };
   let ranks: Rank[] = [
     {
       id: "major",
@@ -24,7 +24,7 @@ async function workspace(page: Page, permissions = 16) {
       position: 0,
     },
   ];
-  const state = { permissions, failOrder: false };
+  const state = { permissions, failOrder: false, failMembers: false };
   const writes: { method: string; path: string; body: unknown }[] = [];
   await page.addInitScript(() => {
     localStorage.setItem(
@@ -53,7 +53,26 @@ async function workspace(page: Page, permissions = 16) {
     if (path === "/auth/me") await route.fulfill({ json: { id: "user", username: "Tester" } });
     else if (path === "/auth/me/units") await route.fulfill({ json: { units: [unit] } });
     else if (path === "/units/unit") await route.fulfill({ json: unit });
-    else if (path === "/units/unit/access")
+    else if (path === "/units/unit/roles") await route.fulfill({ json: { roles: [] } });
+    else if (path === "/units/unit/members") {
+      if (state.failMembers) {
+        await route.fulfill({ status: 500, json: { message: "Could not load members." } });
+        return;
+      }
+      const offset = Number(url.searchParams.get("offset") ?? 0);
+      const limit = Number(url.searchParams.get("limit") ?? 100);
+      const members = Array.from({ length: 105 }, (_, i) => ({
+        id: `member-${i}`,
+        user_id: `user-${i}`,
+        unit_id: "unit",
+        rank_id: i === 104 ? "major" : "private",
+        username: `user-${i}`,
+        display_name: `Person ${i}`,
+        icon_url: null,
+        role_ids: [],
+      }));
+      await route.fulfill({ json: { members: members.slice(offset, offset + limit) } });
+    } else if (path === "/units/unit/access")
       await route.fulfill({
         json: {
           member_id: "member",
@@ -359,4 +378,62 @@ test("in-use deletion preserves the rank and unsaved drafts require discarding",
   await page.getByRole("textbox", { name: /Rank name/ }).fill("Unsaved");
   await page.getByRole("button", { name: "Discard changes", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Private", exact: true })).toBeVisible();
+});
+
+test("personnel ranks deep-link for ordinary members and survive reload and history", async ({
+  page,
+}) => {
+  await workspace(page, 0);
+  await page.goto("/units/unit/personnel");
+  const link = page.getByRole("link", { name: "Private", exact: true }).first();
+  await expect(link).toHaveAttribute("href", "/units/unit/ranks?rankId=private");
+  await link.click();
+  await expect(page.getByRole("heading", { name: "Private", exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Private", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /Major Maj/ }).click();
+  await expect(page).toHaveURL(/rankId=major$/);
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Private", exact: true })).toBeVisible();
+  await page.goto("/units/unit/ranks?rankId=missing");
+  await expect(page.getByRole("heading", { name: "Major", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/ranks$/);
+});
+
+test("rank members include later roster pages, filter by username, and preserve drafts", async ({
+  page,
+}, info) => {
+  await workspace(page);
+  await page.getByRole("textbox", { name: /Description/ }).fill("Local draft");
+  await page.getByRole("tab", { name: "Members", exact: true }).click();
+  await expect(page.getByText("1 member has this rank.", { exact: true })).toBeVisible();
+  await page.getByRole("searchbox").fill("user-104");
+  await expect(page.getByText("Person 104", { exact: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("rank-members.png"), fullPage: true });
+  await page.getByRole("searchbox").fill("user-0");
+  await expect(page.getByText("No matching members. Try another name or username.")).toBeVisible();
+  await page.getByRole("tab", { name: "Details", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: /Description/ })).toHaveValue("Local draft");
+  await page.getByRole("tab", { name: "Members", exact: true }).click();
+  await page.getByRole("button", { name: /Private Pvt/ }).click();
+  await expect(page.getByRole("alert")).toContainText("unsaved changes");
+  await page.getByRole("button", { name: "Discard changes", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Private members", exact: true })).toBeVisible();
+  await expect(page.getByRole("searchbox")).toHaveValue("");
+  await expect(page.getByText("104 members have this rank.")).toBeVisible();
+});
+
+test("rank members recover from a failed read and show empty ranks", async ({ page }) => {
+  const { state } = await workspace(page);
+  state.failMembers = true;
+  await page.getByRole("tab", { name: "Members", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Could not load members.");
+  state.failMembers = false;
+  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await expect(page.getByText("Person 104", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "New rank", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Members", exact: true })).toHaveCount(0);
+  await page.getByRole("textbox", { name: "Abbreviation", exact: true }).fill("Sgt.");
+  await page.getByRole("button", { name: "Save rank", exact: true }).click();
+  await expect(page.getByText("No members have this rank yet.")).toBeVisible();
 });

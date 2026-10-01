@@ -89,6 +89,8 @@ const ranks = createRoute({
   getParentRoute: () => unit,
   path: "/ranks",
   component: RanksPage,
+  validateSearch: (search: Record<string, unknown>): { rankId?: string } =>
+    typeof search.rankId === "string" ? { rankId: search.rankId } : {},
 });
 
 const profile = createRoute({
