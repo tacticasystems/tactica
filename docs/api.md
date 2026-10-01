@@ -27,7 +27,7 @@ principals and non-member superusers do not bypass this rule.
 | GET | `/api/v1/units/{unit_id}/roles/{role_id}/members` | `{ "member_ids": [UUID] }` |
 
 - `MemberSummary`: `id`, `user_id`, `unit_id`, `rank_id`, `username`, `display_name`, `icon_url`, `role_ids`.
-- `RankSummary`: `id`, `unit_id`, `slug`, `display_name`, `icon_url`, `description`.
+- `RankSummary`: `id`, `unit_id`, `slug`, `display_name`, `icon_url`, `description`, `position`.
 - `RoleSummary`: `id`, `unit_id`, `display_name`, `description`, `permissions`, `position`, `kind`.
 
 The member-role response contains role IDs that clients can resolve from
@@ -47,7 +47,7 @@ apply.
 ## Pagination and errors
 
 All collection reads above accept `offset` (default 0, minimum 0) and `limit`
-(default 10, range 1–100). Units, members, and ranks sort by ID ascending. Roles sort by position
+(default 10, range 1–100). Units and members sort by ID ascending. Ranks and roles sort by position
 descending (highest first); member-role assignments sort by member ID and role ID. Empty collections and pages beyond the end return
 200 with an empty array. Counts describe memberships, not the current page.
 
@@ -146,9 +146,9 @@ membership or from holding all ordinary bits: Administrator is a separate bit.
 Unknown bits and negative masks are rejected. The shared `tactica-permissions`
 crate is re-exported by `tactica_api_types::v1::roles` for Rust clients.
 
-`ManageUnit`, `ManageRanks`, `AssignRanks`, and `ManageMembers` are defined for
+`ManageUnit`, `AssignRanks`, and `ManageMembers` are defined for
 future write endpoints. `ManageMembers` does not mean kick, ban, or manage role
-assignments. The currently implemented writes enforce ManageRoles/AssignRoles.
+assignments. The currently implemented writes enforce ManageRoles/AssignRoles/ManageRanks.
 
 Higher `position` values rank above lower values. Each unit has a unique order.
 A member can edit, delete, assign, remove, or reorder only roles **strictly
@@ -188,9 +188,58 @@ before using the new permission checks. It also constrains database permission
 masks and role positions.
 
 The next endpoint batch can use the remaining bits for unit profile/settings,
-rank management, rank assignment, and member display fields. Member onboarding
+rank assignment, and member display fields. Member onboarding
 and removal need separate rules, plus ownership transfer and protection against
 removing the owner.
+
+## Rank management
+
+Ranks are visible to every current member of the unit. Creation, editing,
+deletion, and reordering require the `ManageRanks` (16) permission from roles.
+Administrator and the unit owner's existing implicit authority also allow these
+writes, but membership is still required. Rank position does not grant authority
+or impose a role hierarchy on rank edits. `AssignRanks` alone cannot manage rank
+definitions; assigning members to ranks remains a separate future endpoint.
+
+| Method | Path | Response |
+| --- | --- | --- |
+| POST | `/api/v1/units/{unit_id}/ranks` | 201 with `RankSummary` |
+| PATCH | `/api/v1/units/{unit_id}/ranks/{rank_id}` | 200 with `RankSummary` |
+| PATCH | `/api/v1/units/{unit_id}/ranks/order` | 200 with `ListRanksResponse` |
+| DELETE | `/api/v1/units/{unit_id}/ranks/{rank_id}` | 204 |
+
+POST accepts `slug` (the abbreviation), optional `display_name`, `icon_url`, and
+`description`. Abbreviations and non-null display names are trimmed and must
+contain 1–100 characters. Descriptions allow up to 2000 characters. Non-null
+icon URLs must start with `http://` or `https://`, contain no whitespace, and be
+at most 2000 bytes. Duplicate abbreviations within a unit return 409.
+
+PATCH accepts the same fields, all optional. Omitted fields are preserved;
+explicit null clears the name, icon, or description. Unknown fields, including
+`id`, `unit_id`, and `position`, are rejected. Rank IDs and member assignments
+survive edits and reordering. Missing or foreign rank IDs return 404.
+
+New ranks are inserted at position 0, shifting existing ranks upward. Higher
+positions appear first in GET and reorder responses, including pagination. New
+units start with Major above Private. The migration backfills existing ranks to
+preserve their previous ID-ascending display order; it does not change their IDs
+or references.
+
+Reordering accepts `{ "rank_ids": ["lowest-rank-id", "...", "highest-rank-id"] }`.
+Include every rank in the unit exactly once; missing, duplicate, or foreign IDs
+return 400 and leave the order unchanged. Positions are unique within a unit.
+
+Deletion returns 409 if the rank is assigned to a member or is configured as
+that unit's initial rank. It never removes members or changes their ranks.
+Authorization and all mutations run in one transaction under the same unit row
+lock as role management, so role permission revocation and rank writes serialize.
+Permissions are checked live from every assigned role and the implicit Everyone
+role, rather than from JWTs. Raw CRUD stores remain trusted internal interfaces;
+request handlers use `UnitRankManagementStore`.
+
+The web workspace includes a Ranks page for all members. Authorized members can
+edit rank fields and reorder using pointer, touch, or keyboard controls. Other
+members see read-only rank details. Preview edits stay in the browser session.
 
 ## Authentication sessions
 

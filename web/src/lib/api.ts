@@ -80,6 +80,20 @@ export const createUnit = (display_name: string, slug: string) =>
   });
 
 export const api: UnitDataSource = {
+  saveRank: (unitId, rankId, input) =>
+    client.request<Rank>(`/units/${unitId}/ranks${rankId ? `/${rankId}` : ""}`, {
+      method: rankId ? "PATCH" : "POST",
+      body: JSON.stringify(input),
+    }),
+  deleteRank: (unitId, rankId) =>
+    client.request<void>(`/units/${unitId}/ranks/${rankId}`, { method: "DELETE" }),
+  reorderRanks: async (unitId, rankIds) =>
+    (
+      await client.request<{ ranks: Rank[] }>(`/units/${unitId}/ranks/order`, {
+        method: "PATCH",
+        body: JSON.stringify({ rank_ids: [...rankIds].reverse() }),
+      })
+    ).ranks,
   allMembers: (id, signal) => listAll<Member>(`/units/${id}/members`, "members", signal),
   roleMembers: (unitId, roleId, signal) =>
     listAll<string>(`/units/${unitId}/roles/${roleId}/members`, "member_ids", signal),

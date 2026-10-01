@@ -31,7 +31,15 @@ export interface Member {
   role_ids: string[];
 }
 
+export interface RankInput {
+  slug: string;
+  display_name: string | null;
+  icon_url: string | null;
+  description: string | null;
+}
+
 export interface Rank {
+  position: number;
   id: string;
   unit_id: string;
   slug: string;
@@ -67,6 +75,10 @@ export interface UnitDataSource {
   unit(id: string, signal?: AbortSignal): Promise<Unit>;
   members(id: string, offset: number, signal?: AbortSignal): Promise<Member[]>;
   ranks(id: string, signal?: AbortSignal): Promise<Rank[]>;
+  saveRank(unitId: string, rankId: string | null, input: RankInput): Promise<Rank>;
+  deleteRank(unitId: string, rankId: string): Promise<void>;
+  /** Rank IDs in display order, highest first. */
+  reorderRanks(unitId: string, rankIds: string[]): Promise<Rank[]>;
   roles(id: string, signal?: AbortSignal): Promise<Role[]>;
   access(id: string, signal?: AbortSignal): Promise<Access>;
   allMembers(id: string, signal?: AbortSignal): Promise<Member[]>;

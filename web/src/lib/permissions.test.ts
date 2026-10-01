@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { canAssignRole, canCreateRole, canDeleteRole, canEditRole, canGrant } from "./permissions";
+import {
+  canAssignRole,
+  canCreateRole,
+  canDeleteRole,
+  canEditRole,
+  canGrant,
+  canManageRanks,
+} from "./permissions";
 import type { Access, Role } from "./types";
 
 const access: Access = {
@@ -65,5 +72,15 @@ describe("UI role capabilities", () => {
   it("does not let ordinary permission holders grant Administrator", () => {
     expect(canGrant({ ...access, permissions: 126 }, 1)).toBe(false);
     expect(canGrant({ ...access, permissions: 126 }, 64)).toBe(true);
+  });
+});
+
+describe("UI rank capabilities", () => {
+  it("requires Manage ranks or Administrator, with the existing owner override", () => {
+    for (const permissions of [0, 2, 4, 8, 32, 64, 110])
+      expect(canManageRanks({ ...access, permissions })).toBe(false);
+    for (const permissions of [16, 1, 127])
+      expect(canManageRanks({ ...access, permissions, highest_role_position: 0 })).toBe(true);
+    expect(canManageRanks({ ...access, permissions: 0, is_owner: true })).toBe(true);
   });
 });

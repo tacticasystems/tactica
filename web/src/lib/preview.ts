@@ -1,4 +1,4 @@
-import type { Member, Role, Unit, UnitDataSource } from "./types";
+import type { Member, Rank, Role, Unit, UnitDataSource } from "./types";
 
 export const previewUnit: Unit = {
   id: "preview",
@@ -29,6 +29,23 @@ const members: Member[] = roster.map(([name, , abbreviation], index) => ({
   icon_url: null,
   role_ids: ["everyone"],
 }));
+
+let ranks: Rank[] = Array.from(
+  new Map(
+    roster.map(([, name, abbreviation]) => [
+      abbreviation,
+      {
+        id: abbreviation,
+        unit_id: "preview",
+        slug: abbreviation,
+        display_name: name,
+        icon_url: null,
+        description: null,
+        position: 0,
+      },
+    ]),
+  ).values(),
+).map((rank, index, all) => ({ ...rank, position: all.length - index - 1 }));
 
 let roles: Role[] = [
   {
@@ -116,24 +133,40 @@ export const previewApi: UnitDataSource = {
   },
   unit: () => copy(previewUnit),
   members: (_id, offset) => copy(membersWithRoles().slice(offset, offset + 20)),
-  ranks: () =>
-    copy(
-      Array.from(
-        new Map(
-          roster.map(([, name, abbreviation]) => [
-            abbreviation,
-            {
-              id: abbreviation,
-              unit_id: "preview",
-              slug: abbreviation,
-              display_name: name,
-              icon_url: null,
-              description: null,
-            },
-          ]),
-        ).values(),
-      ),
-    ),
+  ranks: () => copy(ranks),
+  async saveRank(_unitId, rankId, input) {
+    if (ranks.some((rank) => rank.id !== rankId && rank.slug === input.slug))
+      throw new Error("A rank with this abbreviation already exists.");
+    const existing = ranks.find((rank) => rank.id === rankId);
+    if (rankId && !existing) throw new Error("This rank no longer exists.");
+    if (existing) {
+      const saved = { ...existing, ...input };
+      ranks = ranks.map((rank) => (rank.id === rankId ? saved : rank));
+      return structuredClone(saved);
+    }
+    const saved: Rank = { ...input, id: crypto.randomUUID(), unit_id: "preview", position: 0 };
+    ranks = [...ranks.map((rank) => ({ ...rank, position: rank.position + 1 })), saved];
+    return structuredClone(saved);
+  },
+  async deleteRank(_unitId, rankId) {
+    if (!ranks.some((rank) => rank.id === rankId)) throw new Error("This rank no longer exists.");
+    if (members.some((member) => member.rank_id === rankId) || rankId === "Rct")
+      throw new Error("Rank is assigned to a member or is the unit's initial rank.");
+    ranks = ranks.filter((rank) => rank.id !== rankId);
+  },
+  async reorderRanks(_unitId, rankIds) {
+    if (
+      rankIds.length !== ranks.length ||
+      new Set(rankIds).size !== ranks.length ||
+      rankIds.some((id) => !ranks.some((rank) => rank.id === id))
+    )
+      throw new Error("The rank list changed. Reload it and try again.");
+    ranks = rankIds.map((id, index) => ({
+      ...ranks.find((rank) => rank.id === id)!,
+      position: rankIds.length - index - 1,
+    }));
+    return structuredClone(ranks);
+  },
   roles: () => copy(roles),
   // Capabilities simulate an editor; they make no claim about the example's owner.
   access: () =>

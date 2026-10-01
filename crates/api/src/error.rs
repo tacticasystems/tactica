@@ -11,6 +11,9 @@ pub enum Error {
     #[error("Not Found")]
     NotFound,
 
+    #[error("Conflict: {0}")]
+    Conflict(String),
+
     #[error("Validation failed: {0}")]
     Validation(String),
 
@@ -54,6 +57,12 @@ impl IntoResponse for Error {
                 "forbidden".to_string(),
             ),
 
+            Self::Conflict(msg) => (
+                axum::http::StatusCode::CONFLICT,
+                msg.clone(),
+                "conflict".to_string(),
+            ),
+
             Self::Store(StoreError::Conflict) => (
                 axum::http::StatusCode::CONFLICT,
                 "A conflict occurred with the database.".to_string(),
@@ -69,7 +78,7 @@ impl IntoResponse for Error {
                 )
             }
 
-            _ => (
+            Self::Store(_) => (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 "An internal server error occurred.".to_string(),
                 "internal_server_error".to_string(),
@@ -107,6 +116,23 @@ impl From<tactica_db_model::RoleWriteError> for Error {
                 Self::Validation("Role order must contain every unit role exactly once".to_owned())
             }
             RoleWriteError::Store(error) => Self::Store(error),
+        }
+    }
+}
+
+impl From<tactica_db_model::RankWriteError> for Error {
+    fn from(error: tactica_db_model::RankWriteError) -> Self {
+        use tactica_db_model::RankWriteError;
+        match error {
+            RankWriteError::Authorization(error) => error.into(),
+            RankWriteError::NotFound => Self::NotFound,
+            RankWriteError::InvalidOrder => {
+                Self::Validation("Rank order must contain every unit rank exactly once".to_owned())
+            }
+            RankWriteError::InUse => Self::Conflict(
+                "Rank is assigned to a member or is the unit's initial rank".to_owned(),
+            ),
+            RankWriteError::Store(error) => Self::Store(error),
         }
     }
 }

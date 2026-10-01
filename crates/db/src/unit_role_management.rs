@@ -28,7 +28,7 @@ fn permissions(bits: i64) -> Result<Permissions, RoleWriteError> {
     Permissions::from_bits(bits).ok_or(RoleWriteError::InvalidPermissions)
 }
 
-struct Actor {
+pub struct Actor {
     permissions: Permissions,
     highest_position: Option<i64>,
     is_owner: bool,
@@ -56,7 +56,7 @@ impl Actor {
     }
 }
 
-async fn authorize(
+pub async fn authorize(
     conn: &mut AsyncPgConnection,
     actor_id: UserId,
     unit_id: UnitId,
@@ -72,7 +72,7 @@ async fn authorize(
     if !active {
         return Err(RoleWriteError::Unauthorized);
     }
-    // Every API role mutation uses this lock, including changes to the actor's
+    // Every API role and rank mutation uses this lock, including changes to the actor's
     // roles. Permission checks and writes therefore cannot race each other.
     let owner_id = units::table
         .find(unit_id.as_uuid())

@@ -31,7 +31,9 @@ export function unitOptions(source: UnitDataSource, unitId: string) {
   });
 }
 
-export function errorMessage(error: unknown) {
+export function errorMessage(error: unknown, scope: "role" | "rank" = "role") {
+  if (error instanceof ApiError && error.status === 403 && scope === "rank")
+    return "Your permissions changed. Reload the ranks and try again.";
   if (error instanceof ApiError && error.status === 403)
     return "Your permissions changed, or this role is above your role. Reload the roles and try again.";
   return error instanceof Error ? error.message : "The change could not be saved. Try again.";

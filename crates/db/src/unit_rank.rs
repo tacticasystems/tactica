@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 use diesel::{ExpressionMethods, QueryDsl, delete, dsl::insert_into, update};
-use diesel_async::RunQueryDsl;
+use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
 use tactica_db_model::{
     ListPagination, NewUnitRank, StoreError, UnitRank, UnitRankFilter, UnitRankStore,
 };
-use tactica_db_schema::schema::unit_ranks;
+use tactica_db_schema::schema::{unit_ranks, units};
 use tactica_uuid_kinds::{RankId, UnitId};
 
 use crate::PgConnection;
@@ -31,7 +31,7 @@ impl UnitRankStore for PgConnection {
         }
 
         Ok(query
-            .order(unit_ranks::id)
+            .order(unit_ranks::position.desc())
             .offset(pagination.offset.0)
             .limit(pagination.limit.0)
             .get_results(&mut self.conn().await?)
@@ -67,18 +67,18 @@ impl UnitRankStore for PgConnection {
     }
 
     async fn create(&self, rank: NewUnitRank) -> Result<UnitRank, StoreError> {
-        insert_into(unit_ranks::table)
-            .values((
-                unit_ranks::id.eq(rank.id.as_uuid()),
-                unit_ranks::unit_id.eq(rank.unit_id.as_uuid()),
-                unit_ranks::slug.eq(rank.slug),
-                unit_ranks::display_name.eq(rank.display_name),
-                unit_ranks::icon_url.eq(rank.icon_url),
-                unit_ranks::description.eq(rank.description),
-            ))
-            .get_result(&mut self.conn().await?)
+        self.conn()
+            .await?
+            .transaction::<_, StoreError, _>(async move |conn| {
+                units::table
+                    .find(rank.unit_id.as_uuid())
+                    .for_update()
+                    .select(units::id)
+                    .first::<UnitId>(conn)
+                    .await?;
+                insert_at_bottom(conn, rank).await
+            })
             .await
-            .map_err(Into::into)
     }
 
     async fn update(&self, rank: UnitRank) -> Result<UnitRank, StoreError> {
@@ -101,4 +101,26 @@ impl UnitRankStore for PgConnection {
             .await?;
         Ok(())
     }
+}
+
+pub async fn insert_at_bottom(
+    conn: &mut AsyncPgConnection,
+    rank: NewUnitRank,
+) -> Result<UnitRank, StoreError> {
+    update(unit_ranks::table.filter(unit_ranks::unit_id.eq(rank.unit_id.as_uuid())))
+        .set(unit_ranks::position.eq(unit_ranks::position + 1))
+        .execute(conn)
+        .await?;
+    Ok(insert_into(unit_ranks::table)
+        .values((
+            unit_ranks::id.eq(rank.id.as_uuid()),
+            unit_ranks::unit_id.eq(rank.unit_id.as_uuid()),
+            unit_ranks::slug.eq(rank.slug),
+            unit_ranks::display_name.eq(rank.display_name),
+            unit_ranks::icon_url.eq(rank.icon_url),
+            unit_ranks::description.eq(rank.description),
+            unit_ranks::position.eq(0_i64),
+        ))
+        .get_result(conn)
+        .await?)
 }

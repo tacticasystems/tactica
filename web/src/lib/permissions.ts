@@ -17,8 +17,7 @@ export const permissionDefinitions = [
   {
     bit: 16,
     label: "Manage ranks",
-    description: "Manage organizational rank definitions.",
-    future: true,
+    description: "Create, edit, delete, and reorder ranks.",
   },
   { bit: 32, label: "Assign ranks", description: "Change member ranks.", future: true },
   {
@@ -59,4 +58,8 @@ export function canDeleteRole(access: Access, role: Role) {
 
 export function canGrant(access: Access, bit: number) {
   return access.is_owner || (access.permissions & 1) !== 0 || (access.permissions & bit) !== 0;
+}
+
+export function canManageRanks(access: Access) {
+  return access.is_owner || (access.permissions & 17) !== 0;
 }

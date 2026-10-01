@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronsUpDown,
   Home,
+  ChevronsUp,
   LogOut,
   Settings,
   Users,
@@ -91,13 +92,15 @@ function LoadedWorkspace({ unitId }: { unitId: string }) {
   const query = useQuery(options);
   const user = useQuery({ ...userOptions(), enabled: !preview });
   const location = useLocation();
-  const label = location.pathname.endsWith("/roles")
-    ? "Roles"
-    : location.pathname.endsWith("/profile")
-      ? "Profile"
-      : location.pathname.endsWith("/overview")
-        ? "Overview"
-        : "Personnel";
+  const label = location.pathname.endsWith("/ranks")
+    ? "Ranks"
+    : location.pathname.endsWith("/roles")
+      ? "Roles"
+      : location.pathname.endsWith("/profile")
+        ? "Profile"
+        : location.pathname.endsWith("/overview")
+          ? "Overview"
+          : "Personnel";
   useEffect(() => {
     document.title = `${label}${query.data ? ` · ${query.data.display_name}` : ""} · Tactica`;
   }, [label, query.data]);
@@ -157,6 +160,7 @@ function WorkspaceShell({ unit, preview = false, accountName, label, children }:
   const links = [
     { page: "overview", title: "Overview", icon: Home },
     { page: "personnel", title: "Personnel", icon: Users },
+    { page: "ranks", title: "Ranks", icon: ChevronsUp },
   ] as const;
   return (
     <>

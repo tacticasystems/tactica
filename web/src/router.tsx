@@ -9,6 +9,7 @@ import {
 import { AuthPage } from "./pages/auth";
 import { UnitsPage } from "./pages/units";
 import { PersonnelPage } from "./pages/personnel";
+import { RanksPage } from "./pages/ranks";
 import { RolesPage } from "./pages/roles";
 import { ProfilePage } from "./pages/profile";
 import { OverviewPage } from "./pages/overview";
@@ -81,6 +82,12 @@ const roles = createRoute({
     typeof search.roleId === "string" ? { roleId: search.roleId } : {},
 });
 
+const ranks = createRoute({
+  getParentRoute: () => unit,
+  path: "/ranks",
+  component: RanksPage,
+});
+
 const profile = createRoute({
   getParentRoute: () => unit,
   path: "/profile",
@@ -93,7 +100,7 @@ export const router = createRouter({
     login,
     register,
     units,
-    unit.addChildren([unitIndex, overview, personnel, roles, profile]),
+    unit.addChildren([unitIndex, overview, personnel, ranks, roles, profile]),
   ]),
   defaultPreload: "intent",
 });
