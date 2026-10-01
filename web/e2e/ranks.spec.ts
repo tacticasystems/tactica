@@ -180,7 +180,7 @@ async function workspace(page: Page, permissions = 16) {
       await route.fulfill({ status: 204 });
     } else throw new Error(`Unexpected API request: ${method} ${path}`);
   });
-  await page.goto("/units/unit/ranks");
+  await page.goto("/units/unit/admin/ranks");
   await expect(page.getByRole("heading", { name: "Major", exact: true })).toBeVisible();
   return {
     state,
@@ -443,18 +443,20 @@ test("personnel ranks deep-link for ordinary members and survive reload and hist
   await workspace(page, 0);
   await page.goto("/units/unit/personnel");
   const link = page.getByRole("link", { name: "Private", exact: true }).first();
-  await expect(link).toHaveAttribute("href", "/units/unit/ranks?rankId=private");
+  await expect(link).toHaveAttribute("href", "/units/unit/ranks/private");
   await link.click();
   await expect(page.getByRole("heading", { name: "Private", exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Private", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: /Major Maj/ }).click();
-  await expect(page).toHaveURL(/rankId=major$/);
+  await page.getByRole("link", { name: "Ranks", exact: true }).last().click();
+  await page.getByRole("link", { name: "Major", exact: true }).click();
+  await expect(page).toHaveURL(/ranks\/major$/);
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Ranks", exact: true })).toBeVisible();
   await page.goBack();
   await expect(page.getByRole("heading", { name: "Private", exact: true })).toBeVisible();
-  await page.goto("/units/unit/ranks?rankId=missing");
-  await expect(page.getByRole("heading", { name: "Major", exact: true })).toBeVisible();
-  await expect(page).toHaveURL(/\/ranks$/);
+  await page.goto("/units/unit/ranks/missing");
+  await expect(page.getByRole("heading", { name: "Rank not found", exact: true })).toBeVisible();
 });
 
 test("rank members include later roster pages, filter by username, and preserve drafts", async ({
@@ -551,7 +553,9 @@ test("member view and edit keep the roster compact and refresh rank tabs", async
   await page.getByRole("tab", { name: "Members", exact: true }).click();
   await expect(page.getByText("2 members have this rank.")).toBeVisible();
   await expect(page.getByText("Person 0", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: /Private Pvt/ }).click();
+  await page.getByRole("link", { name: "Ranks", exact: true }).last().click();
+  await page.getByRole("link", { name: "Private", exact: true }).click();
+  await page.getByRole("tab", { name: "Members", exact: true }).click();
   await expect(page.getByText("103 members have this rank.")).toBeVisible();
   expect(writes).toEqual([
     { method: "PATCH", path: "/units/unit/members/member-0", body: { rank_id: "major" } },
@@ -684,4 +688,42 @@ test("profile manager can edit only the display name", async ({ page }) => {
   await expect(page.getByRole("textbox", { name: "Display name" })).toHaveValue("New name");
   await page.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(page.getByRole("heading", { name: "New name", exact: true })).toBeVisible();
+});
+
+test("rank directory searches, views members, and opens the selected admin editor", async ({
+  page,
+}) => {
+  await workspace(page);
+  await page.goto("/units/unit/ranks");
+  await expect(page.getByRole("table")).toBeVisible();
+  await expect(page.getByRole("button", { name: "New rank", exact: true })).toHaveCount(0);
+  await page.getByRole("searchbox", { name: "Search ranks" }).fill("pvt");
+  await expect(page.getByRole("link", { name: "Major", exact: true })).toHaveCount(0);
+  await page.getByRole("link", { name: "Private", exact: true }).click();
+  await page.getByRole("tab", { name: "Members", exact: true }).click();
+  await expect(page.getByText("104 members have this rank.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Person 0", exact: true })).toHaveAttribute(
+    "href",
+    "/units/unit/personnel/member-0",
+  );
+  await page.getByRole("tab", { name: "Details", exact: true }).click();
+  await page.getByRole("link", { name: "Edit rank", exact: true }).click();
+  await expect(page).toHaveURL(/admin\/ranks\?rankId=private$/);
+  await expect(page.getByRole("textbox", { name: "Abbreviation", exact: true })).toHaveValue(
+    "Pvt.",
+  );
+});
+
+test("ordinary members browse ranks without editing and old links open rank views", async ({
+  page,
+}) => {
+  await workspace(page, 0);
+  await expect(page.getByRole("textbox", { name: "Abbreviation", exact: true })).toHaveValue(
+    "Maj.",
+  );
+  await page.goto("/units/unit/ranks?rankId=major");
+  await expect(page).toHaveURL(/ranks\/major$/);
+  await expect(page.getByRole("heading", { name: "Major", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Edit rank", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("textbox")).toHaveCount(0);
 });

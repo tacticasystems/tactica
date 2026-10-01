@@ -131,9 +131,8 @@ export function MemberPage({ editing = false }: { editing?: boolean }) {
                   {rank ? (
                     <Link
                       className="member-profile-link"
-                      to="/units/$unitId/ranks"
-                      params={{ unitId: unit.id }}
-                      search={{ rankId: rank.id }}
+                      to="/units/$unitId/ranks/$rankId"
+                      params={{ unitId: unit.id, rankId: rank.id }}
                     >
                       {rank.display_name ?? rank.slug}
                     </Link>

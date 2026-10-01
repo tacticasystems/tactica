@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -91,7 +92,13 @@ function RankMembers({ rank }: { rank: Rank }) {
                     <div className="role-member-identity">
                       <Avatar name={memberName} url={member.icon_url} size="small" />
                       <div>
-                        <strong>{memberName}</strong>
+                        <Link
+                          className="member-profile-link"
+                          to="/units/$unitId/personnel/$memberId"
+                          params={{ unitId: unit.id, memberId: member.id }}
+                        >
+                          {memberName}
+                        </Link>
                         <small>{member.username}</small>
                       </div>
                     </div>

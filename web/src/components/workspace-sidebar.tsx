@@ -161,7 +161,9 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
                     <SidebarMenuButton
                       asChild
                       isActive={
-                        location.pathname.endsWith(`/${page}`) ||
+                        location.pathname === `/units/${unit.id}/${page}` ||
+                        (page === "ranks" &&
+                          location.pathname.startsWith(`/units/${unit.id}/ranks/`)) ||
                         (page === "personnel" && location.pathname.includes("/personnel/"))
                       }
                     >
@@ -201,6 +203,20 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
                               onClick={close}
                             >
                               <span>Profile</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={location.pathname.endsWith("/admin/ranks")}
+                          >
+                            <Link
+                              to="/units/$unitId/admin/ranks"
+                              params={{ unitId: unit.id }}
+                              onClick={close}
+                            >
+                              <span>Ranks</span>
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>

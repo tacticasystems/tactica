@@ -5,6 +5,7 @@ import {
   Link,
   Navigate,
   Outlet,
+  redirect,
 } from "@tanstack/react-router";
 
 import { sessionSnapshot } from "./lib/api";
@@ -14,6 +15,8 @@ import { AuthPage } from "./pages/auth";
 import { UnitsPage } from "./pages/units";
 import { MemberPage } from "./pages/member";
 import { PersonnelPage } from "./pages/personnel";
+import { AdminRanksPage } from "./pages/admin-ranks";
+import { RankPage } from "./pages/rank";
 import { RanksPage } from "./pages/ranks";
 import { RolesPage } from "./pages/roles";
 import { ProfilePage } from "./pages/profile";
@@ -100,6 +103,28 @@ const ranks = createRoute({
   getParentRoute: () => unit,
   path: "/ranks",
   component: RanksPage,
+  beforeLoad: ({ search, params }) => {
+    if (search.rankId)
+      throw redirect({
+        to: "/units/$unitId/ranks/$rankId",
+        params: { unitId: params.unitId, rankId: search.rankId },
+        search: {},
+        replace: true,
+      });
+  },
+  validateSearch: (search: Record<string, unknown>): { rankId?: string } =>
+    typeof search.rankId === "string" ? { rankId: search.rankId } : {},
+});
+
+const rank = createRoute({
+  getParentRoute: () => unit,
+  path: "/ranks/$rankId",
+  component: RankPage,
+});
+const adminRanks = createRoute({
+  getParentRoute: () => unit,
+  path: "/admin/ranks",
+  component: AdminRanksPage,
   validateSearch: (search: Record<string, unknown>): { rankId?: string } =>
     typeof search.rankId === "string" ? { rankId: search.rankId } : {},
 });
@@ -116,7 +141,18 @@ export const router = createRouter({
     login,
     register,
     units,
-    unit.addChildren([unitIndex, overview, personnel, member, editMember, ranks, roles, profile]),
+    unit.addChildren([
+      unitIndex,
+      overview,
+      personnel,
+      member,
+      editMember,
+      ranks,
+      rank,
+      adminRanks,
+      roles,
+      profile,
+    ]),
   ]),
   defaultPreload: "intent",
 });

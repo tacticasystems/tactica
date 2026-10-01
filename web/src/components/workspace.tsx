@@ -35,7 +35,7 @@ function LoadedWorkspace({ unitId }: { unitId: string }) {
     ? "Edit member"
     : /\/personnel\/[^/]+$/.test(location.pathname)
       ? "Member"
-      : location.pathname.endsWith("/ranks")
+      : location.pathname.endsWith("/ranks") || /\/ranks\/[^/]+$/.test(location.pathname)
         ? "Ranks"
         : location.pathname.endsWith("/roles")
           ? "Roles"

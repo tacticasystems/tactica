@@ -73,11 +73,7 @@ export function PersonnelTable({
                   <div className="rank-name">
                     {icon && <img src={icon} alt="" className="rank-icon" />}
                     {rank ? (
-                      <Link
-                        to="/units/$unitId/ranks"
-                        params={{ unitId }}
-                        search={{ rankId: rank.id }}
-                      >
+                      <Link to="/units/$unitId/ranks/$rankId" params={{ unitId, rankId: rank.id }}>
                         {rank.display_name ?? rank.slug}
                       </Link>
                     ) : (

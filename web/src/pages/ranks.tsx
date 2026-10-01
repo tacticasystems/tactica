@@ -1,458 +1,111 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { FormEvent } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useBlocker, useNavigate, useSearch } from "@tanstack/react-router";
-import { LockKeyhole, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { Search } from "lucide-react";
 import { useWorkspace } from "../components/workspace-context";
-import { EmptyState } from "../components/empty-state";
-import { ErrorState } from "../components/error-state";
-import { LoadingState } from "../components/loading-state";
 import { PageHeading } from "../components/page-heading";
-import { RankDetails } from "../components/rank-details";
-import { RankList } from "../components/rank-list";
-import { Button } from "../components/ui/button";
+import { LoadingState } from "../components/loading-state";
+import { ErrorState } from "../components/error-state";
+import { EmptyState } from "../components/empty-state";
 import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
 import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../components/ui/alert-dialog";
-import { canManageRanks } from "../lib/permissions";
-import { errorMessage, queryClient } from "../lib/queries";
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
 import { safeImage } from "../lib/utils";
-import type { Rank, RankInput } from "../lib/types";
 
 export function RanksPage() {
   const { unit, source, queryKey } = useWorkspace();
-  const ranksKey = [...queryKey, "ranks"];
-  const accessKey = [...queryKey, "access"];
+  const [search, setSearch] = useState("");
   const ranks = useQuery({
-    queryKey: ranksKey,
+    queryKey: [...queryKey, "ranks"],
     queryFn: ({ signal }) => source.ranks(unit.id, signal),
   });
-  const access = useQuery({
-    queryKey: accessKey,
-    queryFn: ({ signal }) => source.access(unit.id, signal),
-  });
-  const { rankId } = useSearch({ from: "/units/$unitId/ranks" });
-  const navigate = useNavigate({ from: "/units/$unitId/ranks" });
-  const selected = rankId ?? null;
-  const setSelected = (id: string | null) => {
-    // Callers guard selection changes or explicitly save/discard the draft.
-    void navigate({ search: id ? { rankId: id } : {}, ignoreBlocker: true });
-  };
-  const [revision, setRevision] = useState(0);
-  const [dirty, setDirty] = useState(false);
-  const [switchTarget, setSwitchTarget] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Rank | null>(null);
-  const [notice, setNotice] = useState("");
-  const current =
-    selected === "new"
-      ? "new"
-      : (ranks.data?.find((rank) => rank.id === selected)?.id ?? ranks.data?.[0]?.id);
-  const rank = ranks.data?.find((item) => item.id === current);
-  const validSelection = selected === "new" || ranks.data?.some((item) => item.id === selected);
-  useEffect(() => {
-    if (ranks.isSuccess && selected && !validSelection) {
-      void navigate({ search: {}, replace: true, ignoreBlocker: true });
-    }
-  }, [ranks.isSuccess, selected, validSelection, navigate]);
-  const blocker = useBlocker({
-    shouldBlockFn: ({ current: location, next }) =>
-      dirty &&
-      (location.pathname !== next.pathname ||
-        ("rankId" in next.search ? next.search.rankId : ranks.data?.[0]?.id) !== current),
-    enableBeforeUnload: dirty,
-    withResolver: true,
-  });
-  const refreshAccess = () => {
-    void queryClient.invalidateQueries({ queryKey: accessKey });
-  };
-  const save = useMutation({
-    mutationFn: ({ id, input }: { id: string | null; input: RankInput }) =>
-      source.saveRank(unit.id, id, input),
-    onSuccess: async (saved) => {
-      setDirty(false);
-      await queryClient.invalidateQueries({ queryKey: ranksKey });
-      setSelected(saved.id);
-      setRevision((value) => value + 1);
-      setNotice("Rank saved.");
-    },
-    onError: () => {
-      refreshAccess();
-      void queryClient.invalidateQueries({ queryKey: ranksKey });
-    },
-  });
-  const remove = useMutation({
-    mutationFn: (target: Rank) => source.deleteRank(unit.id, target.id),
-    onSuccess: async () => {
-      setDeleteTarget(null);
-      setSelected(null);
-      setDirty(false);
-      await queryClient.invalidateQueries({ queryKey: ranksKey });
-      setNotice("Rank deleted.");
-    },
-    onError: () => {
-      refreshAccess();
-      void queryClient.invalidateQueries({ queryKey: ranksKey });
-    },
-  });
-  const reorder = useMutation({
-    mutationFn: (ids: string[]) => source.reorderRanks(unit.id, ids),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(ranksKey, updated);
-    },
-    onError: () => {
-      void queryClient.invalidateQueries({ queryKey: ranksKey });
-      refreshAccess();
-    },
-  });
-  const pending = save.isPending || remove.isPending || reorder.isPending;
-  const select = (id: string) => {
-    if (id === current) return;
-    if (dirty) {
-      setSwitchTarget(id);
-      return;
-    }
-    setSelected(id);
-    save.reset();
-    setNotice("");
-  };
-  if (ranks.isPending || access.isPending)
-    return (
-      <>
-        <PageHeading title="Ranks" description="Your unit’s rank structure." />
-        <LoadingState label="Loading ranks and permissions" />
-      </>
-    );
-  if (ranks.isError || access.isError)
-    return (
-      <ErrorState
-        error={ranks.error ?? access.error}
-        retry={() => {
-          void ranks.refetch();
-          void access.refetch();
-        }}
-      />
-    );
-  const editable = canManageRanks(access.data);
+  const filtered =
+    ranks.data?.filter((rank) =>
+      `${rank.display_name ?? ""} ${rank.slug} ${rank.description ?? ""}`
+        .toLocaleLowerCase()
+        .includes(search.trim().toLocaleLowerCase()),
+    ) ?? [];
   return (
     <>
       <PageHeading
         title="Ranks"
-        description="Your unit’s rank structure, ordered highest first."
+        description={`The ${unit.display_name} rank structure, ordered highest first.`}
         action={
-          editable && (
-            <Button variant="outline" disabled={pending} onClick={() => select("new")}>
-              <Plus size={16} />
-              New rank
-            </Button>
-          )
+          <label className="search-input">
+            <Search size={17} aria-hidden="true" />
+            <span className="sr-only">Search ranks</span>
+            <Input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search ranks"
+            />
+          </label>
         }
       />
-      {notice && (
-        <p className="save-notice" role="status">
-          {notice}
-        </p>
-      )}
-      {(switchTarget || blocker.status === "blocked") && (
-        <div className="unsaved-prompt" role="alert">
-          <p>You have unsaved changes. Discard them to continue?</p>
-          <div className="actions">
-            <Button
-              variant="outline"
-              disabled={pending}
-              onClick={() => {
-                setDirty(false);
-                save.reset();
-                if (blocker.status === "blocked") blocker.proceed();
-                else setSelected(switchTarget);
-                setSwitchTarget(null);
-              }}
-            >
-              Discard changes
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                if (blocker.status === "blocked") blocker.reset();
-                setSwitchTarget(null);
-              }}
-            >
-              Keep editing
-            </Button>
-          </div>
-        </div>
-      )}
-      <div className="roles-layout">
-        <RankList
-          ranks={ranks.data}
-          access={access.data}
-          selected={current}
-          pending={pending}
-          reorderStatus={
-            reorder.isPending
-              ? "Saving order…"
-              : reorder.isError
-                ? errorMessage(reorder.error, "rank")
-                : reorder.isSuccess
-                  ? "Order saved."
-                  : ""
-          }
-          reorderError={reorder.isError}
-          onSelect={select}
-          onReorder={(ids) => {
-            setSelected(current ?? null);
-            reorder.mutate(ids);
-          }}
-        />
-        {rank || current === "new" ? (
-          <RankDetails rank={rank}>
-            <RankEditor
-              key={`${current}-${revision}`}
-              rank={rank}
-              editable={editable}
-              pending={pending}
-              error={save.isError ? errorMessage(save.error, "rank") : ""}
-              onDirty={setDirty}
-              onSave={(input) => {
-                setNotice("");
-                save.mutate({ id: rank?.id ?? null, input });
-              }}
-              onCancel={() => {
-                setDirty(false);
-                setSelected(null);
-                save.reset();
-              }}
-              onDelete={
-                rank && editable
-                  ? () => {
-                      remove.reset();
-                      setDeleteTarget(rank);
-                    }
-                  : undefined
-              }
-            />
-          </RankDetails>
-        ) : (
-          <EmptyState title="No ranks yet">
-            Members can view ranks here once a rank manager creates them.
-          </EmptyState>
-        )}
+      <div className="roster-meta">
+        <span>
+          {ranks.data?.length ?? 0} {ranks.data?.length === 1 ? "rank" : "ranks"}
+        </span>
+        {search && <span>{filtered.length} match</span>}
+        {ranks.isFetching && !ranks.isPending && <span role="status">Updating…</span>}
       </div>
-      <AlertDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => {
-          if (!open && !remove.isPending) setDeleteTarget(null);
-        }}
-      >
-        <AlertDialogContent aria-busy={remove.isPending}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete rank?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Delete “{deleteTarget?.display_name ?? deleteTarget?.slug}”? This cannot be undone.
-              Ranks assigned to members or used as the initial rank cannot be deleted.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {remove.isError && (
-            <p className="form-error" role="alert">
-              {errorMessage(remove.error, "rank")}
-            </p>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={remove.isPending}>Cancel</AlertDialogCancel>
-            <Button
-              variant="destructive"
-              disabled={!editable || pending}
-              onClick={() => {
-                if (deleteTarget) remove.mutate(deleteTarget);
-              }}
-            >
-              {remove.isPending ? "Deleting…" : "Delete rank"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
-  );
-}
-
-function RankEditor({
-  rank,
-  editable,
-  pending,
-  error,
-  onDirty,
-  onSave,
-  onCancel,
-  onDelete,
-}: {
-  rank?: Rank;
-  editable: boolean;
-  pending: boolean;
-  error: string;
-  onDirty: (dirty: boolean) => void;
-  onSave: (input: RankInput) => void;
-  onCancel: () => void;
-  onDelete?: () => void;
-}) {
-  const initial = useMemo(
-    () => ({
-      slug: rank?.slug ?? "",
-      display_name: rank?.display_name ?? "",
-      icon_url: rank?.icon_url ?? "",
-      description: rank?.description ?? "",
-    }),
-    [rank?.slug, rank?.display_name, rank?.icon_url, rank?.description],
-  );
-  // Keep only local overrides so untouched fields always use the latest server values.
-  const [edits, setEdits] = useState<Partial<typeof initial>>({});
-  const draft = { ...initial, ...edits };
-  const iconInput = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    iconInput.current?.setCustomValidity(
-      draft.icon_url.trim() && !safeImage(draft.icon_url.trim())
-        ? "Use an HTTPS URL or an HTTP URL from this site."
-        : "",
-    );
-  }, [draft.icon_url]);
-  const dirty = Object.entries(edits).some(
-    ([key, value]) => value !== initial[key as keyof typeof initial],
-  );
-  useEffect(() => {
-    setEdits((previous) => {
-      const remaining = Object.fromEntries(
-        Object.entries(previous).filter(
-          ([key, value]) => value !== initial[key as keyof typeof initial],
-        ),
-      );
-      return Object.keys(remaining).length === Object.keys(previous).length ? previous : remaining;
-    });
-  }, [initial]);
-  useEffect(() => onDirty(dirty), [dirty, onDirty]);
-  const update = (key: keyof typeof draft, value: string) => {
-    const next = { ...edits };
-    if (value === initial[key]) delete next[key];
-    else next[key] = value;
-    setEdits(next);
-    onDirty(
-      Object.entries(next).some(([field, edit]) => edit !== initial[field as keyof typeof initial]),
-    );
-  };
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (!editable || pending) return;
-    onSave({
-      slug: draft.slug.trim(),
-      display_name: draft.display_name.trim() || null,
-      icon_url: draft.icon_url.trim() || null,
-      description: draft.description.trim() || null,
-    });
-  };
-  return (
-    <form className="role-editor" onSubmit={submit} aria-busy={pending}>
-      <header className="editor-heading">
-        <div>
-          <h2>{rank?.display_name ?? rank?.slug ?? "New rank"}</h2>
-          <p>Ranks describe the unit’s organization.</p>
+      {ranks.isPending ? (
+        <LoadingState label="Loading ranks" />
+      ) : ranks.isError ? (
+        <ErrorState error={ranks.error} retry={() => void ranks.refetch()} />
+      ) : filtered.length === 0 ? (
+        <EmptyState title={search ? "No matching ranks" : "No ranks yet"}>
+          {search
+            ? "Try another name or clear your search."
+            : "Ranks will appear here once a rank manager creates them."}
+        </EmptyState>
+      ) : (
+        <div className="table-wrap">
+          <Table className="roster-table rank-directory">
+            <TableCaption className="sr-only">{unit.display_name} ranks</TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead scope="col">Rank</TableHead>
+                <TableHead scope="col">Abbreviation</TableHead>
+                <TableHead scope="col">Description</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((rank) => {
+                const icon = safeImage(rank.icon_url);
+                return (
+                  <TableRow key={rank.id}>
+                    <TableCell>
+                      <div className="rank-name">
+                        {icon && <img src={icon} className="rank-icon" alt="" />}
+                        <Link
+                          className="member-profile-link"
+                          to="/units/$unitId/ranks/$rankId"
+                          params={{ unitId: unit.id, rankId: rank.id }}
+                        >
+                          {rank.display_name ?? rank.slug}
+                        </Link>
+                      </div>
+                    </TableCell>
+                    <TableCell>{rank.slug}</TableCell>
+                    <TableCell className="rank-directory-description">
+                      {rank.description ?? "—"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
-        {!editable && (
-          <span className="readonly-label">
-            <LockKeyhole size={14} />
-            Read only
-          </span>
-        )}
-      </header>
-      {!editable && (
-        <p className="access-note">
-          A role with Manage ranks permission is required to edit ranks.
-        </p>
       )}
-      <fieldset disabled={pending}>
-        <Label htmlFor="rank-slug">Abbreviation</Label>
-        <Input
-          id="rank-slug"
-          readOnly={!editable}
-          value={draft.slug}
-          required
-          maxLength={100}
-          onChange={(event) => update("slug", event.target.value)}
-        />
-        <Label htmlFor="rank-name">
-          Rank name <span className="optional-label">optional</span>
-        </Label>
-        <Input
-          id="rank-name"
-          readOnly={!editable}
-          value={draft.display_name}
-          maxLength={100}
-          onChange={(event) => update("display_name", event.target.value)}
-        />
-        <Label htmlFor="rank-icon">
-          Icon URL <span className="optional-label">optional</span>
-        </Label>
-        <Input
-          id="rank-icon"
-          ref={iconInput}
-          readOnly={!editable}
-          type="url"
-          value={draft.icon_url}
-          maxLength={2000}
-          pattern="https?://.*"
-          onChange={(event) => update("icon_url", event.target.value)}
-        />
-        <Label htmlFor="rank-description">
-          Description <span className="optional-label">optional</span>
-        </Label>
-        <Textarea
-          id="rank-description"
-          readOnly={!editable}
-          value={draft.description}
-          maxLength={2000}
-          rows={4}
-          onChange={(event) => update("description", event.target.value)}
-        />
-      </fieldset>
-      {error && (
-        <p className="form-error" role="alert">
-          {error}
-        </p>
-      )}
-      {editable && (
-        <footer className="editor-footer">
-          <div className="editor-status">
-            {onDelete && (
-              <Button type="button" variant="outline" disabled={pending} onClick={onDelete}>
-                <Trash2 size={15} />
-                Delete rank
-              </Button>
-            )}
-            <span>{dirty ? "Unsaved changes" : rank ? "Up to date" : ""}</span>
-          </div>
-          <div className="actions">
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={pending || (!dirty && !!rank)}
-              onClick={() => {
-                setEdits({});
-                onCancel();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={pending || (!dirty && !!rank) || !draft.slug.trim()}>
-              Save rank
-            </Button>
-          </div>
-        </footer>
-      )}
-    </form>
+    </>
   );
 }
