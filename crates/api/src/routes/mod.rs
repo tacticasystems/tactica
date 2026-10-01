@@ -7,3 +7,5 @@ pub mod roles;
 pub mod unit_settings;
 pub mod units;
 pub mod users;
+
+pub mod files;

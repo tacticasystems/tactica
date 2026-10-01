@@ -12,7 +12,8 @@ version = 2
 confidence-threshold = 0.9
 private = { ignore = true }
 allow = ["MIT", "Apache-2.0", "Unicode-3.0", "MPL-2.0", "BSD-3-Clause", "ISC"]
-exceptions = []
+# Mozilla CA data used by rustls-platform-verifier on WebAssembly (S3 HTTP client).
+exceptions = [{ crate = "webpki-root-certs", allow = ["CDLA-Permissive-2.0"] }]
 
 [bans]
 multiple-versions = "deny"
@@ -26,6 +27,15 @@ allow = []
 # webauthn-rs-core requires it unconditionally.
 deny = [{ crate = "openssl-sys" }, { crate = "native-tls" }]
 skip = [
+  # S3's current HTTP/crypto stack and existing API dependencies use different
+  # major versions. Keep exceptions pinned until upstream dependencies converge.
+  { crate = "base64@0.22.1" },
+  { crate = "tower-http@0.6.11" },
+  { crate = "windows-sys@0.52.0" },
+  # multer uses spin 0.9; object_store's CRC implementation uses spin 0.10.
+  { crate = "spin@0.9.9" },
+  # png uses miniz_oxide 0.8 while flate2 uses 0.9.
+  { crate = "miniz_oxide@0.8.9" },
   { crate = "block-buffer@0.10.4" },
   { crate = "const-oid@0.9.6" },
   { crate = "cpufeatures@0.2.17" },

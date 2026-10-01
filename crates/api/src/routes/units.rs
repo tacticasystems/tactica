@@ -21,7 +21,7 @@ pub fn router() -> Router<ApiState> {
     Router::new()
         .route("/api/v1/units", get(list_units))
         .route("/api/v1/units", post(create_unit))
-        .route("/api/v1/units/{unit_id}", get(get_unit))
+        .route("/api/v1/units/{unit_id}", get(get_unit).patch(update_unit))
         .route("/api/v1/auth/me/units", get(list_my_units))
 }
 
@@ -187,4 +187,107 @@ async fn create_unit(
         rank_id: created.owner_rank_id,
         member_id: created.owner_membership_id,
     }))
+}
+
+#[utoipa::path(patch, path = "/api/v1/units/{unit_id}",
+    params(("unit_id" = UnitId, Path)), request_body = v1::units::UpdateUnitRequest,
+    responses((status = 200, body = v1::units::UnitSummary), (status = 400, description = "Invalid profile"),
+      (status = 401, description = "Authentication required"), (status = 403, description = "ManageUnit required"),
+      (status = 404, description = "Unit not found"), (status = 409, description = "Handle already in use")))]
+async fn update_unit(
+    Storage(storage): Storage,
+    Principal(actor): Principal,
+    Path(unit_id): Path<UnitId>,
+    Json(body): Json<v1::units::UpdateUnitRequest>,
+) -> Result<Json<v1::units::UnitSummary>> {
+    let actor = super::common::require_user(actor)?;
+    let patch = validate_profile(body)?;
+    let unit = storage.patch_profile(actor, unit_id, patch).await?;
+    let counts = UnitMembershipStore::count_by_unit(storage.as_ref(), vec![unit_id]).await?;
+    Ok(Json(v1::units::UnitSummary {
+        id: unit.id,
+        slug: unit.slug,
+        display_name: unit.display_name.unwrap_or_default(),
+        icon_url: unit.icon_url,
+        banner_url: unit.banner_url,
+        biography: unit.biography,
+        member_count: counts.get(&unit_id).copied().unwrap_or_default(),
+    }))
+}
+
+fn validate_profile(
+    body: v1::units::UpdateUnitRequest,
+) -> Result<tactica_db_model::UnitProfilePatch> {
+    let display_name = body.display_name.map(|value| value.trim().to_owned());
+    if display_name.as_ref().is_some_and(|name| {
+        name.is_empty() || name.chars().count() > 100 || name.chars().any(char::is_control)
+    }) {
+        return Err(Error::Validation(
+            "Display name must be 1–100 characters without control characters".to_owned(),
+        ));
+    }
+    let slug = body.slug.map(|value| value.trim().to_owned());
+    if slug.as_ref().is_some_and(|slug| {
+        slug.len() > 100
+            || slug.split('-').any(|part| {
+                part.is_empty()
+                    || !part
+                        .bytes()
+                        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+            })
+    }) {
+        return Err(Error::Validation(
+            "Unit handle must be 1–100 lowercase letters, numbers, and single hyphens".to_owned(),
+        ));
+    }
+    let biography = body.biography.map(|value| {
+        value
+            .map(|text| text.trim().to_owned())
+            .filter(|text| !text.is_empty())
+    });
+    if biography
+        .as_ref()
+        .and_then(Option::as_ref)
+        .is_some_and(|text| text.chars().count() > 5000 || text.contains('\0'))
+    {
+        return Err(Error::Validation(
+            "Biography must be at most 5000 characters and cannot contain null characters"
+                .to_owned(),
+        ));
+    }
+    let banner_url = body.banner_url.map(|value| {
+        value
+            .map(|text| text.trim().to_owned())
+            .filter(|text| !text.is_empty())
+    });
+    if let Some(Some(value)) = &banner_url {
+        let safe_path = value.starts_with('/') && !value.starts_with("//");
+        let safe_https = url::Url::parse(value).is_ok_and(|url| {
+            url.scheme() == "https"
+                && url.host_str().is_some()
+                && url.username().is_empty()
+                && url.password().is_none()
+        });
+        if value.len() > 2048
+            || value.contains('\\')
+            || value.chars().any(char::is_control)
+            || !(safe_path || safe_https)
+        {
+            return Err(Error::Validation(
+                "Banner URL must be an HTTPS URL or a path starting with / (up to 2048 characters)"
+                    .to_owned(),
+            ));
+        }
+    }
+    if display_name.is_none() && slug.is_none() && biography.is_none() && banner_url.is_none() {
+        return Err(Error::Validation(
+            "Provide at least one profile field to update".to_owned(),
+        ));
+    }
+    Ok(tactica_db_model::UnitProfilePatch {
+        display_name,
+        slug,
+        biography,
+        banner_url,
+    })
 }

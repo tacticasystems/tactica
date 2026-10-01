@@ -1,5 +1,7 @@
 //! Database models and storage traits for Tactica.
 
+mod files;
+pub use files::*;
 mod refresh_session;
 mod unit;
 mod unit_member_role;
@@ -25,7 +27,8 @@ pub use user::*;
 
 /// A trait that combines all the storage traits into one for convenience.
 pub trait TacticaStorage:
-    UserStore
+    FileStore
+    + UserStore
     + RefreshSessionStore
     + UnitStore
     + UnitMembershipStore
@@ -41,7 +44,8 @@ pub trait TacticaStorage:
 }
 
 impl<T> TacticaStorage for T where
-    T: UserStore
+    T: FileStore
+        + UserStore
         + RefreshSessionStore
         + UnitStore
         + UnitMembershipStore

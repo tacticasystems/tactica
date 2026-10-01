@@ -10,7 +10,6 @@ export const permissionDefinitions = [
     bit: 2,
     label: "Manage unit",
     description: "Manage the unit profile and settings.",
-    future: true,
   },
   { bit: 4, label: "Manage roles", description: "Create, edit, delete, and reorder roles." },
   { bit: 8, label: "Assign roles", description: "Assign and remove roles on members." },
@@ -59,4 +58,8 @@ export function canDeleteRole(access: Access, role: Role) {
 
 export function canGrant(access: Access, bit: number) {
   return access.is_owner || (access.permissions & 1) !== 0 || (access.permissions & bit) !== 0;
+}
+
+export function canManageUnit(access: Access) {
+  return access.is_owner || (access.permissions & 3) !== 0;
 }

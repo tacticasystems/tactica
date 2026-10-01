@@ -149,3 +149,17 @@ table! {
         updated_by -> Nullable<Uuid>,
     }
 }
+
+table! {
+    files (id) {
+        id -> Uuid,
+        unit_id -> Uuid,
+        uploaded_by -> Uuid,
+        filename -> Text,
+        content_type -> Text,
+        size -> BigInt,
+        is_icon -> Bool,
+        created_at -> Timestamptz,
+        is_banner -> Bool,
+    }
+}

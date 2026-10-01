@@ -33,9 +33,10 @@ fn routes(state: ApiState) -> Router {
         .merge(routes::health::router().with_state(state.clone()))
         .layer(RequestBodyLimitLayer::new(MAX_BODY_BYTES))
         .fallback(async || -> Response { Error::NotFound.into_response() })
-        .with_state(state);
+        .with_state(state.clone());
 
     ordinary
+        .merge(routes::files::router().with_state(state))
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
             REQUEST_TIMEOUT,

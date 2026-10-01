@@ -14,6 +14,7 @@ members = [
   "crates/uuid-kinds",
   "crates/auth",
   "crates/permissions",
+  "crates/files",
 ]
 
 [workspace.package]
@@ -139,3 +140,5 @@ tactica-db = { path = "crates/db" }
 tactica-db-schema = { path = "crates/db/schema" }
 tactica-db-model = { path = "crates/db/model" }
 tactica-uuid-kinds = { path = "crates/uuid-kinds" }
+
+tactica-files = { path = "crates/files" }

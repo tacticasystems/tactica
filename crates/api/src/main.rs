@@ -29,6 +29,26 @@ struct Args {
         default_value = "0.0.0.0:8080"
     )]
     listen_addr: SocketAddr,
+
+    #[clap(
+        long,
+        env = "TACTICA_FILE_BACKEND",
+        default_value = "filesystem",
+        value_enum
+    )]
+    file_backend: FileBackend,
+    #[clap(long, env = "TACTICA_FILE_ROOT", default_value = "./uploads")]
+    file_root: PathBuf,
+    #[clap(long, env = "TACTICA_S3_BUCKET", required_if_eq("file_backend", "s3"))]
+    s3_bucket: Option<String>,
+    #[clap(long, env = "TACTICA_S3_REGION", required_if_eq("file_backend", "s3"))]
+    s3_region: Option<String>,
+}
+
+#[derive(Clone, clap::ValueEnum)]
+enum FileBackend {
+    Filesystem,
+    S3,
 }
 
 #[tokio::main]
@@ -70,7 +90,23 @@ async fn main() {
         tactica_auth::AuthContext::new(Arc::new(conn.clone()), jwt_context, &args.auth_salt)
             .expect("Failed to create AuthContext");
 
-    let state = ApiState::new(Arc::new(conn), Arc::new(auth_context));
+    let files: Arc<dyn tactica_files::FileStorage> = match args.file_backend {
+        FileBackend::Filesystem => {
+            std::fs::create_dir_all(&args.file_root).expect("Failed to create upload directory");
+            Arc::new(
+                tactica_files::FilesystemStorage::new(&args.file_root)
+                    .expect("Failed to initialize file storage"),
+            )
+        }
+        FileBackend::S3 => Arc::new(
+            tactica_files::S3Storage::from_env(
+                args.s3_bucket.as_deref().expect("S3 bucket is required"),
+                args.s3_region.as_deref().expect("S3 region is required"),
+            )
+            .expect("Failed to initialize S3 storage"),
+        ),
+    };
+    let state = ApiState::new(Arc::new(conn), Arc::new(auth_context)).with_file_storage(files);
 
     let listener = TcpListener::bind(args.listen_addr)
         .await

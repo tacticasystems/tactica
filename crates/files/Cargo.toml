@@ -1,0 +1,23 @@
+[package]
+name = "tactica-files"
+version = "0.1.0"
+license.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+bytes = "1"
+object_store = { version = "0.14", features = ["aws"] }
+
+[dev-dependencies]
+testcontainers = { version = "0.27", features = ["http_wait_plain"] }
+tokio.workspace = true
+tempfile = "3"
+
+[lints]
+workspace = true

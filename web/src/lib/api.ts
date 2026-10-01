@@ -114,3 +114,19 @@ export const api: UnitDataSource = {
       body: JSON.stringify(input),
     }),
 };
+
+export async function uploadUnitImage(unitId: string, file: File, kind: "icon" | "banner") {
+  const body = new FormData();
+  body.append("file", file);
+  return client.request<{ id: string; url: string }>(`/units/${unitId}/${kind}`, {
+    method: "POST",
+    body,
+  });
+}
+
+export function updateUnitProfile(unitId: string, input: import("./types").UnitProfileInput) {
+  return client.request<Unit>(`/units/${unitId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
