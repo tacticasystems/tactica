@@ -63,7 +63,7 @@
     },
   ],
 
-	customManagers: [
+  customManagers: [
     {
       customType: 'regex',
       description: 'Process annotated dependencies',
@@ -80,9 +80,8 @@
       ],
       datasourceTemplate: '{{#if datasource}}{{{datasource}}}{{else}}github-releases{{/if}}'
     },
-	],
+  ],
 
-  minimumReleaseAge: "3 days",
   timezone: 'Europe/London',
   labels: ['dependencies'],
   commitBodyTable: true,
