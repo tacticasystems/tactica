@@ -22,6 +22,11 @@
         '/rust/',
       ],
     },
+    {
+      description: 'Group all PNPM toolchain updates together',
+      groupName: 'PNPM toolchain',
+      matchPackageNames: ['/pnpm/'],
+    },
 
     // Semantic Commit
     {
