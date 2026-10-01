@@ -1,3 +1,4 @@
+import { reorderRole } from "./support/reorder-role";
 import { expect, test } from "@playwright/test";
 
 test("roster search and sidebar disclosure preserve navigation", async ({ page, isMobile }) => {
@@ -82,12 +83,7 @@ test("keyboard role reordering saves the new order", async ({ page, isMobile }) 
   await page.getByRole("button", { name: "Create role", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Second role", exact: true })).toBeVisible();
 
-  const handle = page.getByRole("button", { name: "Reorder “Second role”", exact: true });
-  await handle.focus();
-  await page.keyboard.press("Space");
-  await page.keyboard.press("ArrowUp");
-  await page.keyboard.press("Space");
-  await expect(page.getByRole("status").filter({ hasText: "Order saved." })).toBeVisible();
+  await reorderRole(page, "Second role", "Example role", "ArrowUp");
   await expect(page.locator(".role-row strong")).toHaveText([
     "Administrator",
     "Second role",

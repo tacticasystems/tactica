@@ -449,12 +449,30 @@ svg {
   padding: 0 36px;
 }
 
+.topbar > nav {
+  min-width: 0;
+}
+
 .breadcrumb {
+  flex-wrap: nowrap;
   display: flex;
   align-items: center;
   gap: 12px;
   color: var(--muted-foreground);
   font-size: 12px;
+}
+
+.breadcrumb > li {
+  flex-shrink: 0;
+}
+
+.breadcrumb > li:first-child {
+  display: block;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .breadcrumb span:last-child {
@@ -1162,8 +1180,13 @@ fieldset {
   font-size: 17px;
 }
 
+.unit-profile > div {
+  min-width: 0;
+}
+
 .unit-profile h2 {
   font-size: 24px;
+  overflow-wrap: anywhere;
 }
 
 .unit-profile p {
