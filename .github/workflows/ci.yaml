@@ -32,6 +32,7 @@ jobs:
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: |
+            .github/actions/setup-repo/action.yaml
             .github/workflows/ci.yaml
             .mise/config.toml
             .mise/mise.lock
