@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { expect, test as base, type APIRequestContext, type Page } from "@playwright/test";
 import { reorderRole } from "./support/reorder-role";
@@ -405,9 +406,16 @@ for (const kind of ["icon", "banner"] as const) {
   }) => {
     await page.goto(`/units/${workspace.unitId}/profile`);
     const form = page.getByRole("form", { name: `Upload unit ${kind}`, exact: true });
-    await form
-      .getByLabel(`Unit ${kind}`, { exact: true })
-      .setInputFiles(new URL("../public/tactica-logo.png", import.meta.url).pathname);
+    // Some OS/browser combinations provide no MIME type, even for valid images.
+    await form.getByLabel(`Unit ${kind}`, { exact: true }).evaluate(
+      (input: HTMLInputElement, bytes) => {
+        const transfer = new DataTransfer();
+        transfer.items.add(new File([new Uint8Array(bytes)], "image.png", { type: "" }));
+        input.files = transfer.files;
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      },
+      Array.from(readFileSync(new URL("../public/tactica-logo.png", import.meta.url))),
+    );
     await form.getByRole("button", { name: `Upload ${kind}`, exact: true }).click();
     await expect(form.getByRole("status")).toHaveText(`Unit ${kind} updated.`);
     const url = (await apiGet(page, request, `/units/${workspace.unitId}`))[`${kind}_url`];

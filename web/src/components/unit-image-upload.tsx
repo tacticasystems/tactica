@@ -144,7 +144,8 @@ export function UnitImageUpload({ kind }: { kind: "icon" | "banner" }) {
                   ? "This file is empty. Choose an image."
                   : selected.size > maxMiB * 1024 * 1024
                     ? `This image is too large. Choose an image under ${maxMiB} MiB.`
-                    : !["image/png", "image/jpeg", "image/webp"].includes(selected.type)
+                    : selected.type &&
+                        !["image/png", "image/jpeg", "image/webp"].includes(selected.type)
                       ? "Choose a PNG, JPEG or WebP image."
                       : "",
             );
