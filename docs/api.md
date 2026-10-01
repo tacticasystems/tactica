@@ -273,6 +273,12 @@ upload progress, and success or failure feedback; a successful upload immediatel
 refreshes the displayed icon or banner preview. Uploads save separately from
 **Save changes** and preserve unsaved text in the profile editor above.
 
+For current uploaded artwork, choose **Remove icon** or **Remove banner**, then
+confirm removal or choose **Cancel**. Removal requires the same **Manage unit**
+access as uploading and uses the file DELETE endpoint below. Successful removal
+refreshes the profile preview without discarding unsaved text. If removal fails,
+the confirmation shows the error and lets you retry.
+
 File bytes are stored through `tactica_files::FileStorage`, with filesystem and
 S3 implementations. PostgreSQL stores ownership, filenames, size and content
 metadata; API URLs remain stable across backends. Run the database migrations

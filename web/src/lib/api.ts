@@ -130,3 +130,7 @@ export function updateUnitProfile(unitId: string, input: import("./types").UnitP
     body: JSON.stringify(input),
   });
 }
+
+export function deleteUnitFile(unitId: string, fileId: string) {
+  return client.request<void>(`/units/${unitId}/files/${fileId}`, { method: "DELETE" });
+}

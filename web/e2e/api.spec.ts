@@ -396,3 +396,50 @@ test("banner uploads preserve profile drafts and persist after reload", async ({
     "Keep my draft while uploading.",
   );
 });
+
+for (const kind of ["icon", "banner"] as const) {
+  test(`remove unit ${kind} confirms deletion and preserves drafts`, async ({
+    page,
+    request,
+    workspace,
+  }) => {
+    await page.goto(`/units/${workspace.unitId}/profile`);
+    const form = page.getByRole("form", { name: `Upload unit ${kind}`, exact: true });
+    await form
+      .getByLabel(`Unit ${kind}`, { exact: true })
+      .setInputFiles(new URL("../public/tactica-logo.png", import.meta.url).pathname);
+    await form.getByRole("button", { name: `Upload ${kind}`, exact: true }).click();
+    await expect(form.getByRole("status")).toHaveText(`Unit ${kind} updated.`);
+    const url = (await apiGet(page, request, `/units/${workspace.unitId}`))[`${kind}_url`];
+    await page.getByLabel("Biography", { exact: true }).fill("Keep this draft.");
+    await form.getByRole("button", { name: `Remove ${kind}`, exact: true }).click();
+    const dialog = page.getByRole("alertdialog");
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    expect((await apiGet(page, request, `/units/${workspace.unitId}`))[`${kind}_url`]).toBe(url);
+    // A failed deletion keeps the dialog and image available for retry.
+    await page.route("**/files/*", (route) =>
+      route.request().method() === "DELETE"
+        ? route.fulfill({
+            status: 503,
+            contentType: "application/json",
+            body: JSON.stringify({ message: "Please try again." }),
+          })
+        : route.continue(),
+    );
+    await form.getByRole("button", { name: `Remove ${kind}`, exact: true }).click();
+    await dialog.getByRole("button", { name: `Remove ${kind}`, exact: true }).click();
+    await expect(dialog.getByRole("alert")).toHaveText("Please try again.");
+    await page.unroute("**/files/*");
+    await dialog.getByRole("button", { name: `Remove ${kind}`, exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(form.getByRole("status")).toHaveText(`Unit ${kind} removed.`);
+    await expect(form.getByRole("button", { name: `Remove ${kind}`, exact: true })).toHaveCount(0);
+    await expect(page.getByLabel("Biography", { exact: true })).toHaveValue("Keep this draft.");
+    expect((await apiGet(page, request, `/units/${workspace.unitId}`))[`${kind}_url`]).toBeNull();
+    expect((await request.get(url)).status()).toBe(404);
+    await page.getByRole("button", { name: "Save changes", exact: true }).click();
+    await expect(page.getByText("Profile saved.", { exact: true })).toBeVisible();
+    await page.reload();
+    await expect(form.getByRole("button", { name: `Remove ${kind}`, exact: true })).toHaveCount(0);
+  });
+}
