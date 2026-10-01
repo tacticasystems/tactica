@@ -117,7 +117,19 @@ for (const permissions of [0, 4, 32]) {
     await expect(page.getByRole("textbox", { name: "Abbreviation", exact: true })).toHaveValue(
       "Maj.",
     );
-    await expect(page.getByRole("textbox", { name: "Abbreviation", exact: true })).toBeDisabled();
+    const fields = page.locator(".role-editor input, .role-editor textarea");
+    await expect(fields).toHaveCount(4);
+    for (const field of await fields.all()) {
+      await expect(field).toBeEnabled();
+      await expect(field).toHaveJSProperty("readOnly", true);
+      await expect(field).not.toBeEditable();
+    }
+    const abbreviation = page.getByRole("textbox", { name: "Abbreviation", exact: true });
+    await abbreviation.focus();
+    await expect(abbreviation).toBeFocused();
+    await abbreviation.press("ControlOrMeta+a");
+    await abbreviation.pressSequentially("Changed");
+    await expect(abbreviation).toHaveValue("Maj.");
     await expect(page.getByRole("button", { name: "New rank", exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Reorder “/ })).toHaveCount(0);
     await page.getByRole("button", { name: /Private Pvt/ }).click();
@@ -207,7 +219,11 @@ test("permission revocation removes editing controls after a rejected save", asy
   await page.getByRole("button", { name: "Save rank", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("Your permissions changed.");
   await expect(page.getByRole("button", { name: "New rank", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("textbox", { name: /Description/ })).toBeDisabled();
+  await expect(page.getByRole("textbox", { name: /Description/ })).toHaveJSProperty(
+    "readOnly",
+    true,
+  );
+  await expect(page.getByRole("textbox", { name: /Description/ })).toBeEnabled();
 });
 
 test("in-use deletion preserves the rank and unsaved drafts require discarding", async ({

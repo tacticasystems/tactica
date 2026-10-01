@@ -331,10 +331,11 @@ function RankEditor({
           A role with Manage ranks permission is required to edit ranks.
         </p>
       )}
-      <fieldset disabled={!editable || pending}>
+      <fieldset disabled={pending}>
         <Label htmlFor="rank-slug">Abbreviation</Label>
         <Input
           id="rank-slug"
+          readOnly={!editable}
           value={draft.slug}
           required
           maxLength={100}
@@ -345,6 +346,7 @@ function RankEditor({
         </Label>
         <Input
           id="rank-name"
+          readOnly={!editable}
           value={draft.display_name}
           maxLength={100}
           onChange={(event) => update("display_name", event.target.value)}
@@ -354,6 +356,7 @@ function RankEditor({
         </Label>
         <Input
           id="rank-icon"
+          readOnly={!editable}
           type="url"
           value={draft.icon_url}
           maxLength={2000}
@@ -365,6 +368,7 @@ function RankEditor({
         </Label>
         <Textarea
           id="rank-description"
+          readOnly={!editable}
           value={draft.description}
           maxLength={2000}
           rows={4}
