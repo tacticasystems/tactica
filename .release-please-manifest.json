@@ -7,5 +7,5 @@
   "crates/uuid-kinds": "0.0.0",
   "crates/auth": "0.0.0",
   "crates/permissions": "0.0.0",
-  "web": "0.0.0"
+  "web": "1.0.0"
 }
