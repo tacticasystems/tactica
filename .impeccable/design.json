@@ -1,0 +1,609 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-01T11:08:13.124091+00:00",
+  "title": "Design System: Tactica",
+  "extensions": {
+    "colorMeta": {
+      "background": {
+        "role": "neutral",
+        "displayName": "Background",
+        "tonalRamp": [
+          "oklch(0.1500 0.00410 301.42)",
+          "oklch(0.2643 0.00410 301.42)",
+          "oklch(0.3786 0.00410 301.42)",
+          "oklch(0.4929 0.00410 301.42)",
+          "oklch(0.6071 0.00410 301.42)",
+          "oklch(0.7214 0.00410 301.42)",
+          "oklch(0.8357 0.00410 301.42)",
+          "oklch(0.9500 0.00410 301.42)"
+        ]
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Foreground",
+        "tonalRamp": [
+          "oklch(0.1500 0.01142 300.79)",
+          "oklch(0.2643 0.01142 300.79)",
+          "oklch(0.3786 0.01142 300.79)",
+          "oklch(0.4929 0.01142 300.79)",
+          "oklch(0.6071 0.01142 300.79)",
+          "oklch(0.7214 0.01142 300.79)",
+          "oklch(0.8357 0.01142 300.79)",
+          "oklch(0.9500 0.01142 300.79)"
+        ]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Card",
+        "tonalRamp": [
+          "oklch(0.1500 0.00283 308.43)",
+          "oklch(0.2643 0.00283 308.43)",
+          "oklch(0.3786 0.00283 308.43)",
+          "oklch(0.4929 0.00283 308.43)",
+          "oklch(0.6071 0.00283 308.43)",
+          "oklch(0.7214 0.00283 308.43)",
+          "oklch(0.8357 0.00283 308.43)",
+          "oklch(0.9500 0.00283 308.43)"
+        ]
+      },
+      "card-foreground": {
+        "role": "neutral",
+        "displayName": "Card Foreground",
+        "tonalRamp": [
+          "oklch(0.1500 0.01142 300.79)",
+          "oklch(0.2643 0.01142 300.79)",
+          "oklch(0.3786 0.01142 300.79)",
+          "oklch(0.4929 0.01142 300.79)",
+          "oklch(0.6071 0.01142 300.79)",
+          "oklch(0.7214 0.01142 300.79)",
+          "oklch(0.8357 0.01142 300.79)",
+          "oklch(0.9500 0.01142 300.79)"
+        ]
+      },
+      "popover": {
+        "role": "neutral",
+        "displayName": "Popover",
+        "tonalRamp": [
+          "oklch(0.1500 0.00283 308.43)",
+          "oklch(0.2643 0.00283 308.43)",
+          "oklch(0.3786 0.00283 308.43)",
+          "oklch(0.4929 0.00283 308.43)",
+          "oklch(0.6071 0.00283 308.43)",
+          "oklch(0.7214 0.00283 308.43)",
+          "oklch(0.8357 0.00283 308.43)",
+          "oklch(0.9500 0.00283 308.43)"
+        ]
+      },
+      "popover-foreground": {
+        "role": "neutral",
+        "displayName": "Popover Foreground",
+        "tonalRamp": [
+          "oklch(0.1500 0.01142 300.79)",
+          "oklch(0.2643 0.01142 300.79)",
+          "oklch(0.3786 0.01142 300.79)",
+          "oklch(0.4929 0.01142 300.79)",
+          "oklch(0.6071 0.01142 300.79)",
+          "oklch(0.7214 0.01142 300.79)",
+          "oklch(0.8357 0.01142 300.79)",
+          "oklch(0.9500 0.01142 300.79)"
+        ]
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "Soft Lavender",
+        "tonalRamp": [
+          "oklch(0.1500 0.15917 293.54)",
+          "oklch(0.2643 0.15917 293.54)",
+          "oklch(0.3786 0.15917 293.54)",
+          "oklch(0.4929 0.15917 293.54)",
+          "oklch(0.6071 0.15917 293.54)",
+          "oklch(0.7214 0.15917 293.54)",
+          "oklch(0.8357 0.15917 293.54)",
+          "oklch(0.9500 0.15917 293.54)"
+        ]
+      },
+      "primary-foreground": {
+        "role": "neutral",
+        "displayName": "Primary Foreground",
+        "tonalRamp": [
+          "oklch(0.1500 0.02668 301.63)",
+          "oklch(0.2643 0.02668 301.63)",
+          "oklch(0.3786 0.02668 301.63)",
+          "oklch(0.4929 0.02668 301.63)",
+          "oklch(0.6071 0.02668 301.63)",
+          "oklch(0.7214 0.02668 301.63)",
+          "oklch(0.8357 0.02668 301.63)",
+          "oklch(0.9500 0.02668 301.63)"
+        ]
+      },
+      "secondary": {
+        "role": "neutral",
+        "displayName": "Secondary",
+        "tonalRamp": [
+          "oklch(0.1500 0.02745 299.55)",
+          "oklch(0.2643 0.02745 299.55)",
+          "oklch(0.3786 0.02745 299.55)",
+          "oklch(0.4929 0.02745 299.55)",
+          "oklch(0.6071 0.02745 299.55)",
+          "oklch(0.7214 0.02745 299.55)",
+          "oklch(0.8357 0.02745 299.55)",
+          "oklch(0.9500 0.02745 299.55)"
+        ]
+      },
+      "secondary-foreground": {
+        "role": "neutral",
+        "displayName": "Secondary Foreground",
+        "tonalRamp": [
+          "oklch(0.1500 0.07559 297.09)",
+          "oklch(0.2643 0.07559 297.09)",
+          "oklch(0.3786 0.07559 297.09)",
+          "oklch(0.4929 0.07559 297.09)",
+          "oklch(0.6071 0.07559 297.09)",
+          "oklch(0.7214 0.07559 297.09)",
+          "oklch(0.8357 0.07559 297.09)",
+          "oklch(0.9500 0.07559 297.09)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "tonalRamp": [
+          "oklch(0.1500 0.02745 299.55)",
+          "oklch(0.2643 0.02745 299.55)",
+          "oklch(0.3786 0.02745 299.55)",
+          "oklch(0.4929 0.02745 299.55)",
+          "oklch(0.6071 0.02745 299.55)",
+          "oklch(0.7214 0.02745 299.55)",
+          "oklch(0.8357 0.02745 299.55)",
+          "oklch(0.9500 0.02745 299.55)"
+        ]
+      },
+      "muted-foreground": {
+        "role": "neutral",
+        "displayName": "Muted Foreground",
+        "tonalRamp": [
+          "oklch(0.1500 0.02446 303.66)",
+          "oklch(0.2643 0.02446 303.66)",
+          "oklch(0.3786 0.02446 303.66)",
+          "oklch(0.4929 0.02446 303.66)",
+          "oklch(0.6071 0.02446 303.66)",
+          "oklch(0.7214 0.02446 303.66)",
+          "oklch(0.8357 0.02446 303.66)",
+          "oklch(0.9500 0.02446 303.66)"
+        ]
+      },
+      "accent": {
+        "role": "neutral",
+        "displayName": "Accent",
+        "tonalRamp": [
+          "oklch(0.1500 0.02745 299.55)",
+          "oklch(0.2643 0.02745 299.55)",
+          "oklch(0.3786 0.02745 299.55)",
+          "oklch(0.4929 0.02745 299.55)",
+          "oklch(0.6071 0.02745 299.55)",
+          "oklch(0.7214 0.02745 299.55)",
+          "oklch(0.8357 0.02745 299.55)",
+          "oklch(0.9500 0.02745 299.55)"
+        ]
+      },
+      "accent-foreground": {
+        "role": "neutral",
+        "displayName": "Accent Foreground",
+        "tonalRamp": [
+          "oklch(0.1500 0.07559 297.09)",
+          "oklch(0.2643 0.07559 297.09)",
+          "oklch(0.3786 0.07559 297.09)",
+          "oklch(0.4929 0.07559 297.09)",
+          "oklch(0.6071 0.07559 297.09)",
+          "oklch(0.7214 0.07559 297.09)",
+          "oklch(0.8357 0.07559 297.09)",
+          "oklch(0.9500 0.07559 297.09)"
+        ]
+      },
+      "destructive": {
+        "role": "semantic",
+        "displayName": "Destructive",
+        "tonalRamp": [
+          "oklch(0.1500 0.13535 28.29)",
+          "oklch(0.2643 0.13535 28.29)",
+          "oklch(0.3786 0.13535 28.29)",
+          "oklch(0.4929 0.13535 28.29)",
+          "oklch(0.6071 0.13535 28.29)",
+          "oklch(0.7214 0.13535 28.29)",
+          "oklch(0.8357 0.13535 28.29)",
+          "oklch(0.9500 0.13535 28.29)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Border",
+        "tonalRamp": [
+          "oklch(0.1500 0.01413 304.12)",
+          "oklch(0.2643 0.01413 304.12)",
+          "oklch(0.3786 0.01413 304.12)",
+          "oklch(0.4929 0.01413 304.12)",
+          "oklch(0.6071 0.01413 304.12)",
+          "oklch(0.7214 0.01413 304.12)",
+          "oklch(0.8357 0.01413 304.12)",
+          "oklch(0.9500 0.01413 304.12)"
+        ]
+      },
+      "input": {
+        "role": "neutral",
+        "displayName": "Input",
+        "tonalRamp": [
+          "oklch(0.1500 0.02609 303.40)",
+          "oklch(0.2643 0.02609 303.40)",
+          "oklch(0.3786 0.02609 303.40)",
+          "oklch(0.4929 0.02609 303.40)",
+          "oklch(0.6071 0.02609 303.40)",
+          "oklch(0.7214 0.02609 303.40)",
+          "oklch(0.8357 0.02609 303.40)",
+          "oklch(0.9500 0.02609 303.40)"
+        ]
+      },
+      "ring": {
+        "role": "primary",
+        "displayName": "Ring",
+        "tonalRamp": [
+          "oklch(0.1500 0.17157 294.45)",
+          "oklch(0.2643 0.17157 294.45)",
+          "oklch(0.3786 0.17157 294.45)",
+          "oklch(0.4929 0.17157 294.45)",
+          "oklch(0.6071 0.17157 294.45)",
+          "oklch(0.7214 0.17157 294.45)",
+          "oklch(0.8357 0.17157 294.45)",
+          "oklch(0.9500 0.17157 294.45)"
+        ]
+      },
+      "sidebar": {
+        "role": "neutral",
+        "displayName": "Charcoal Plum",
+        "tonalRamp": [
+          "oklch(0.1500 0.01019 303.65)",
+          "oklch(0.2643 0.01019 303.65)",
+          "oklch(0.3786 0.01019 303.65)",
+          "oklch(0.4929 0.01019 303.65)",
+          "oklch(0.6071 0.01019 303.65)",
+          "oklch(0.7214 0.01019 303.65)",
+          "oklch(0.8357 0.01019 303.65)",
+          "oklch(0.9500 0.01019 303.65)"
+        ]
+      },
+      "sidebar-foreground": {
+        "role": "neutral",
+        "displayName": "Sidebar Foreground",
+        "tonalRamp": [
+          "oklch(0.1500 0.01233 301.29)",
+          "oklch(0.2643 0.01233 301.29)",
+          "oklch(0.3786 0.01233 301.29)",
+          "oklch(0.4929 0.01233 301.29)",
+          "oklch(0.6071 0.01233 301.29)",
+          "oklch(0.7214 0.01233 301.29)",
+          "oklch(0.8357 0.01233 301.29)",
+          "oklch(0.9500 0.01233 301.29)"
+        ]
+      },
+      "sidebar-primary": {
+        "role": "primary",
+        "displayName": "Sidebar Primary",
+        "tonalRamp": [
+          "oklch(0.1500 0.15917 293.54)",
+          "oklch(0.2643 0.15917 293.54)",
+          "oklch(0.3786 0.15917 293.54)",
+          "oklch(0.4929 0.15917 293.54)",
+          "oklch(0.6071 0.15917 293.54)",
+          "oklch(0.7214 0.15917 293.54)",
+          "oklch(0.8357 0.15917 293.54)",
+          "oklch(0.9500 0.15917 293.54)"
+        ]
+      },
+      "sidebar-primary-foreground": {
+        "role": "neutral",
+        "displayName": "Sidebar Primary Foreground",
+        "tonalRamp": [
+          "oklch(0.1500 0.01019 303.65)",
+          "oklch(0.2643 0.01019 303.65)",
+          "oklch(0.3786 0.01019 303.65)",
+          "oklch(0.4929 0.01019 303.65)",
+          "oklch(0.6071 0.01019 303.65)",
+          "oklch(0.7214 0.01019 303.65)",
+          "oklch(0.8357 0.01019 303.65)",
+          "oklch(0.9500 0.01019 303.65)"
+        ]
+      },
+      "sidebar-accent": {
+        "role": "primary",
+        "displayName": "Sidebar Accent",
+        "tonalRamp": [
+          "oklch(0.1500 0.15917 293.54)",
+          "oklch(0.2643 0.15917 293.54)",
+          "oklch(0.3786 0.15917 293.54)",
+          "oklch(0.4929 0.15917 293.54)",
+          "oklch(0.6071 0.15917 293.54)",
+          "oklch(0.7214 0.15917 293.54)",
+          "oklch(0.8357 0.15917 293.54)",
+          "oklch(0.9500 0.15917 293.54)"
+        ]
+      },
+      "sidebar-accent-foreground": {
+        "role": "neutral",
+        "displayName": "Sidebar Accent Foreground",
+        "tonalRamp": [
+          "oklch(0.1500 0.02668 301.63)",
+          "oklch(0.2643 0.02668 301.63)",
+          "oklch(0.3786 0.02668 301.63)",
+          "oklch(0.4929 0.02668 301.63)",
+          "oklch(0.6071 0.02668 301.63)",
+          "oklch(0.7214 0.02668 301.63)",
+          "oklch(0.8357 0.02668 301.63)",
+          "oklch(0.9500 0.02668 301.63)"
+        ]
+      },
+      "sidebar-border": {
+        "role": "neutral",
+        "displayName": "Sidebar Border",
+        "tonalRamp": [
+          "oklch(0.1500 0.02229 307.72)",
+          "oklch(0.2643 0.02229 307.72)",
+          "oklch(0.3786 0.02229 307.72)",
+          "oklch(0.4929 0.02229 307.72)",
+          "oklch(0.6071 0.02229 307.72)",
+          "oklch(0.7214 0.02229 307.72)",
+          "oklch(0.8357 0.02229 307.72)",
+          "oklch(0.9500 0.02229 307.72)"
+        ]
+      },
+      "sidebar-ring": {
+        "role": "neutral",
+        "displayName": "Sidebar Ring",
+        "tonalRamp": [
+          "oklch(0.1500 0.15917 293.54)",
+          "oklch(0.2643 0.15917 293.54)",
+          "oklch(0.3786 0.15917 293.54)",
+          "oklch(0.4929 0.15917 293.54)",
+          "oklch(0.6071 0.15917 293.54)",
+          "oklch(0.7214 0.15917 293.54)",
+          "oklch(0.8357 0.15917 293.54)",
+          "oklch(0.9500 0.15917 293.54)"
+        ]
+      },
+      "brand-ink": {
+        "role": "primary",
+        "displayName": "Brand Ink",
+        "tonalRamp": [
+          "oklch(0.1500 0.17333 293.72)",
+          "oklch(0.2643 0.17333 293.72)",
+          "oklch(0.3786 0.17333 293.72)",
+          "oklch(0.4929 0.17333 293.72)",
+          "oklch(0.6071 0.17333 293.72)",
+          "oklch(0.7214 0.17333 293.72)",
+          "oklch(0.8357 0.17333 293.72)",
+          "oklch(0.9500 0.17333 293.72)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "tonalRamp": [
+          "oklch(0.1500 0.00283 308.43)",
+          "oklch(0.2643 0.00283 308.43)",
+          "oklch(0.3786 0.00283 308.43)",
+          "oklch(0.4929 0.00283 308.43)",
+          "oklch(0.6071 0.00283 308.43)",
+          "oklch(0.7214 0.00283 308.43)",
+          "oklch(0.8357 0.00283 308.43)",
+          "oklch(0.9500 0.00283 308.43)"
+        ]
+      },
+      "selection": {
+        "role": "neutral",
+        "displayName": "Selection",
+        "tonalRamp": [
+          "oklch(0.1500 0.02745 299.55)",
+          "oklch(0.2643 0.02745 299.55)",
+          "oklch(0.3786 0.02745 299.55)",
+          "oklch(0.4929 0.02745 299.55)",
+          "oklch(0.6071 0.02745 299.55)",
+          "oklch(0.7214 0.02745 299.55)",
+          "oklch(0.8357 0.02745 299.55)",
+          "oklch(0.9500 0.02745 299.55)"
+        ]
+      },
+      "sidebar-muted": {
+        "role": "neutral",
+        "displayName": "Sidebar Muted",
+        "tonalRamp": [
+          "oklch(0.1500 0.02684 305.74)",
+          "oklch(0.2643 0.02684 305.74)",
+          "oklch(0.3786 0.02684 305.74)",
+          "oklch(0.4929 0.02684 305.74)",
+          "oklch(0.6071 0.02684 305.74)",
+          "oklch(0.7214 0.02684 305.74)",
+          "oklch(0.8357 0.02684 305.74)",
+          "oklch(0.9500 0.02684 305.74)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page titles; 26px on small screens."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Workspace content and controls."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Supporting metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "dragged-role",
+        "value": "0 8px 20px #19171c26",
+        "purpose": "Moving role row; paired with an outline."
+      }
+    ],
+    "motion": [
+      {
+        "name": "administration-chevron",
+        "value": "transform 150ms ease",
+        "purpose": "Disclosure state."
+      },
+      {
+        "name": "sidebar-layout",
+        "value": "200ms linear",
+        "purpose": "Sidebar dimensions and position."
+      },
+      {
+        "name": "sheet",
+        "value": "200ms ease-in-out",
+        "purpose": "Temporary mobile navigation."
+      },
+      {
+        "name": "dialog-overlay",
+        "value": "100ms",
+        "purpose": "Overlay entry and exit."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-desktop-max",
+        "value": "1100px"
+      },
+      {
+        "name": "compact-topbar-max",
+        "value": "800px"
+      },
+      {
+        "name": "sidebar-desktop-min",
+        "value": "768px"
+      },
+      {
+        "name": "mobile-drag-max",
+        "value": "767px"
+      },
+      {
+        "name": "stacked-layout-max",
+        "value": "600px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Existing primary action variant.",
+      "html": "<button class=\"ds-button-primary\">Save changes</button>",
+      "css": ".ds-button-primary{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 10px;border:1px solid transparent;border-radius:var(--radius,4px);font:400 14px/1.5 \"Geist Variable\",sans-serif;cursor:pointer;transition:all 150ms;background:var(--primary,#a78bfa);color:var(--primary-foreground,#17121f);}.ds-button-primary:hover{background:color-mix(in oklab,var(--primary,#a78bfa) 80%,transparent);}.ds-button-primary:focus-visible{outline:2px solid var(--ring,#7955c8);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in oklab,var(--ring,#7955c8) 50%,transparent)}.ds-button-primary:active:not([aria-haspopup]){transform:translateY(1px)}.ds-button-primary:disabled{pointer-events:none;opacity:.5}@media(max-width:600px){.ds-button-primary{min-height:40px}}@media(prefers-reduced-motion:reduce){.ds-button-primary{transition:none}}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Existing outline action variant.",
+      "html": "<button class=\"ds-button-outline\">Save changes</button>",
+      "css": ".ds-button-outline{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 10px;border:1px solid transparent;border-radius:var(--radius,4px);font:400 14px/1.5 \"Geist Variable\",sans-serif;cursor:pointer;transition:all 150ms;background:var(--background,#f5f4f7);color:var(--foreground,#252329);border-color:var(--border,#e1dde7);}.ds-button-outline:hover{background:var(--muted,#eee8fc);}.ds-button-outline:focus-visible{outline:2px solid var(--ring,#7955c8);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in oklab,var(--ring,#7955c8) 50%,transparent)}.ds-button-outline:active:not([aria-haspopup]){transform:translateY(1px)}.ds-button-outline:disabled{pointer-events:none;opacity:.5}@media(max-width:600px){.ds-button-outline{min-height:40px}}@media(prefers-reduced-motion:reduce){.ds-button-outline{transition:none}}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Existing secondary action variant.",
+      "html": "<button class=\"ds-button-secondary\">Save changes</button>",
+      "css": ".ds-button-secondary{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 10px;border:1px solid transparent;border-radius:var(--radius,4px);font:400 14px/1.5 \"Geist Variable\",sans-serif;cursor:pointer;transition:all 150ms;background:var(--secondary,#eee8fc);color:var(--secondary-foreground,#41335f);}.ds-button-secondary:hover{background:color-mix(in oklch,var(--secondary,#eee8fc),var(--foreground,#252329) 5%);}.ds-button-secondary:focus-visible{outline:2px solid var(--ring,#7955c8);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in oklab,var(--ring,#7955c8) 50%,transparent)}.ds-button-secondary:active:not([aria-haspopup]){transform:translateY(1px)}.ds-button-secondary:disabled{pointer-events:none;opacity:.5}@media(max-width:600px){.ds-button-secondary{min-height:40px}}@media(prefers-reduced-motion:reduce){.ds-button-secondary{transition:none}}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Existing ghost action variant.",
+      "html": "<button class=\"ds-button-ghost\">Save changes</button>",
+      "css": ".ds-button-ghost{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 10px;border:1px solid transparent;border-radius:var(--radius,4px);font:400 14px/1.5 \"Geist Variable\",sans-serif;cursor:pointer;transition:all 150ms;background:transparent;color:var(--foreground,#252329);}.ds-button-ghost:hover{background:var(--muted,#eee8fc);}.ds-button-ghost:focus-visible{outline:2px solid var(--ring,#7955c8);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in oklab,var(--ring,#7955c8) 50%,transparent)}.ds-button-ghost:active:not([aria-haspopup]){transform:translateY(1px)}.ds-button-ghost:disabled{pointer-events:none;opacity:.5}@media(max-width:600px){.ds-button-ghost{min-height:40px}}@media(prefers-reduced-motion:reduce){.ds-button-ghost{transition:none}}"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Existing destructive action variant.",
+      "html": "<button class=\"ds-button-destructive\">Delete role</button>",
+      "css": ".ds-button-destructive{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 10px;border:1px solid transparent;border-radius:var(--radius,4px);font:400 14px/1.5 \"Geist Variable\",sans-serif;cursor:pointer;transition:all 150ms;background:color-mix(in oklab,var(--destructive,#9c382f) 10%,transparent);color:var(--destructive,#9c382f);}.ds-button-destructive:hover{background:color-mix(in oklab,var(--destructive,#9c382f) 20%,transparent);}.ds-button-destructive:focus-visible{outline:2px solid var(--ring,#7955c8);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in oklab,var(--ring,#7955c8) 50%,transparent)}.ds-button-destructive:active:not([aria-haspopup]){transform:translateY(1px)}.ds-button-destructive:disabled{pointer-events:none;opacity:.5}@media(max-width:600px){.ds-button-destructive{min-height:40px}}@media(prefers-reduced-motion:reduce){.ds-button-destructive{transition:none}}"
+    },
+    {
+      "name": "Link Button",
+      "kind": "button",
+      "refersTo": "button-link",
+      "description": "Existing link action variant.",
+      "html": "<button class=\"ds-button-link\">Save changes</button>",
+      "css": ".ds-button-link{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 10px;border:1px solid transparent;border-radius:var(--radius,4px);font:400 14px/1.5 \"Geist Variable\",sans-serif;cursor:pointer;transition:all 150ms;background:transparent;color:var(--primary,#a78bfa);}.ds-button-link:hover{text-decoration:underline;text-underline-offset:4px;}.ds-button-link:focus-visible{outline:2px solid var(--ring,#7955c8);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in oklab,var(--ring,#7955c8) 50%,transparent)}.ds-button-link:active:not([aria-haspopup]){transform:translateY(1px)}.ds-button-link:disabled{pointer-events:none;opacity:.5}@media(max-width:600px){.ds-button-link{min-height:40px}}@media(prefers-reduced-motion:reduce){.ds-button-link{transition:none}}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Editable role name.",
+      "html": "<input class=\"ds-input\" aria-label=\"Role name\" value=\"Example role\">",
+      "css": ".ds-input{width:100%;min-height:40px;padding:9px 12px;border:1px solid var(--input,#c4bdcf);border-radius:var(--radius,4px);background:var(--surface,#fdfcfe);color:var(--foreground,#252329);font:400 14px/1.5 \"Geist Variable\",sans-serif;caret-color:var(--brand-ink,#6742b5)}.ds-input:focus-visible{outline:2px solid var(--ring,#7955c8);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in oklab,var(--ring,#7955c8) 50%,transparent)}.ds-input:disabled{background:#f3f0f7;color:#706779}.ds-input:read-only{background:#f0edf5}.ds-input[aria-invalid=true]{border-color:var(--destructive,#9c382f)}"
+    },
+    {
+      "name": "Workspace Navigation",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "Main navigation on Charcoal Plum.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Workspace\"><a class=\"ds-nav-item\" href=\"#overview\">Overview</a><a class=\"ds-nav-item\" href=\"#personnel\" aria-current=\"page\">Personnel</a></nav>",
+      "css": ".ds-nav{padding:16px;background:var(--sidebar,#19171c)}.ds-nav-item{display:flex;align-items:center;height:40px;padding:0 8px;border-radius:3.2px;font:400 13px/1.5 \"Geist Variable\",sans-serif;color:var(--sidebar-foreground,#f5f2fb);text-decoration:none}.ds-nav-item:is(:hover,:focus-visible,[aria-current=page]){background:var(--sidebar-accent,#a78bfa);color:var(--sidebar-accent-foreground,#17121f)}.ds-nav-item:focus-visible{outline:2px solid var(--sidebar-ring,#a78bfa);outline-offset:3px}"
+    },
+    {
+      "name": "Role Pill",
+      "kind": "chip",
+      "refersTo": "role-pill",
+      "description": "A linked, wrapping role label.",
+      "html": "<a class=\"ds-pill\" href=\"#role\">Administrator</a>",
+      "css": ".ds-pill{display:inline-block;padding:3px 9px;border-radius:999px;background:var(--selection,#eee8fc);color:var(--brand-ink,#6742b5);font:400 11px/1.5 \"Geist Variable\",sans-serif;max-width:24ch;overflow-wrap:anywhere;text-decoration:none}.ds-pill:hover{text-decoration:underline;text-underline-offset:2px}.ds-pill:focus-visible{outline:2px solid var(--brand-ink,#6742b5);outline-offset:2px}"
+    },
+    {
+      "name": "Form Panel",
+      "kind": "card",
+      "refersTo": "form-panel",
+      "description": "Flat create-unit form container; fields are documented separately.",
+      "html": "<section class=\"ds-panel\" aria-label=\"Create unit\"><h2 class=\"ds-panel-title\">Create unit</h2></section>",
+      "css": ".ds-panel{padding:24px;background:var(--surface,#fdfcfe);color:var(--foreground,#252329);border:1px solid var(--border,#e1dde7);border-radius:var(--radius,4px);font:400 14px/1.5 \"Geist Variable\",sans-serif}.ds-panel-title{margin:0 0 20px;font-size:18px;font-weight:600;line-height:1.35}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Unit Workspace",
+    "overview": "Tactica is a practical, calm, organised workspace. Its approachable and understated character comes from soft lavender accents, pale working surfaces, and a dark navigation rail. The interface gives unit members and administrators clear places to read, select, and edit.\n\nCompact controls and restrained corners support dense administrative work. Borders and tonal changes establish groups; elevation signals temporary layers or movement. Preserve this quiet character when extending the interface.",
+    "keyCharacteristics": [
+      "Soft Lavender actions and selected navigation against Charcoal Plum.",
+      "Geist typography, compact controls, and clearly separated content groups.",
+      "Flat by default, with functional elevation.",
+      "Approachable and understated buttons, fields, and panels."
+    ],
+    "rules": [
+      {
+        "name": "The Functional Elevation Rule",
+        "body": "Use elevation to communicate a temporary layer or a moving item; retain flat resting panels.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do reuse the application semantic colour variables and existing component variants.",
+      "Do preserve visible focus, readable disabled states, and reduced-motion handling.",
+      "Do stack forms and role layouts at the existing mobile breakpoints.",
+      "Do reserve rounded pills for compact role labels; keep panels and fields gently squared."
+    ],
+    "donts": [
+      "Don't treat the starter dark-theme declarations as a verified alternate Tactica theme.",
+      "Don't substitute documentation typefaces for the workspace\u2019s Geist typography.",
+      "Don't add permanent shadows to ordinary panels or remove the distinct dragging treatment.",
+      "Don't encode role meaning solely through a colour; retain its text label."
+    ]
+  }
+}
