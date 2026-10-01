@@ -1,12 +1,15 @@
-import { Brand } from "../components/shared";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { useState, useSyncExternalStore } from "react";
-import type { SubmitEvent } from "react";
 import { Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import { useState, useSyncExternalStore } from "react";
+import type { SubmitEvent } from "react";
+
 import { client, sessionSnapshot, subscribeSession } from "../lib/api";
+
+import { Brand } from "../components/brand";
+import { FormError } from "../components/form-error";
 import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 
 export function AuthPage({ register = false }: { register?: boolean }) {
   const session = useSyncExternalStore(subscribeSession, sessionSnapshot);
@@ -14,6 +17,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   if (session) return <Navigate to="/units" replace />;
+
   const submit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -37,6 +41,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
       setPending(false);
     }
   };
+
   return (
     <main className="auth-page">
       <div className="auth-brand">
@@ -83,11 +88,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
               />
             </>
           )}
-          {error && (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          )}
+          <FormError message={error} />
           <Button type="submit" disabled={pending}>
             {pending
               ? register

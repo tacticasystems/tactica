@@ -1,15 +1,19 @@
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { useState } from "react";
-import type { SubmitEvent } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { ArrowRight, Plus } from "lucide-react";
-import { createUnit } from "../lib/api";
-import { queryClient, unitsOptions, userOptions } from "../lib/queries";
-import { AppShell, RequireSession } from "../components/workspace";
-import { Avatar, EmptyState, ErrorState, LoadingState, PageHeading } from "../components/shared";
+import { useState } from "react";
+
+import { unitsOptions, userOptions } from "../lib/queries";
+
+import { AppShell } from "../components/app-shell";
+import { CreateUnitForm } from "../components/create-unit-form";
+import { EmptyState } from "../components/empty-state";
+import { ErrorState } from "../components/error-state";
+import { LoadingState } from "../components/loading-state";
+import { PageHeading } from "../components/page-heading";
+import { RequireSession } from "../components/require-session";
 import { Button } from "../components/ui/button";
+import { UnitIdentity } from "../components/unit-identity";
 
 export function UnitsPage() {
   return (
@@ -23,22 +27,7 @@ function UnitsContent() {
   const units = useQuery(unitsOptions());
   const user = useQuery(userOptions());
   const [creating, setCreating] = useState(false);
-  const navigate = useNavigate();
-  const mutation = useMutation({
-    mutationFn: ({ name, slug }: { name: string; slug: string }) => createUnit(name, slug),
-    onSuccess: async (unit) => {
-      await queryClient.invalidateQueries({ queryKey: unitsOptions().queryKey });
-      await navigate({ to: "/units/$unitId/personnel", params: { unitId: unit.id } });
-    },
-  });
-  const submit = (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    mutation.mutate({
-      name: String(data.get("name") ?? "").trim(),
-      slug: String(data.get("slug") ?? "").trim(),
-    });
-  };
+
   return (
     <AppShell label="Your units" accountName={user.data?.display_name ?? user.data?.username}>
       <PageHeading
@@ -47,7 +36,6 @@ function UnitsContent() {
         action={
           <Button
             onClick={() => {
-              mutation.reset();
               setCreating(!creating);
             }}
             variant="outline"
@@ -57,54 +45,7 @@ function UnitsContent() {
           </Button>
         }
       />
-      {creating && (
-        <form className="create-unit-form" onSubmit={submit} aria-busy={mutation.isPending}>
-          <h2>Create a unit</h2>
-          <div className="form-grid">
-            <div>
-              <Label htmlFor="unit-name">Unit name</Label>
-              <Input
-                id="unit-name"
-                name="name"
-                placeholder="9 Rifles"
-                required
-                maxLength={100}
-                autoFocus
-              />
-            </div>
-            <div>
-              <Label htmlFor="unit-slug">Unit handle</Label>
-              <Input
-                id="unit-slug"
-                name="slug"
-                placeholder="9-rifles"
-                pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                required
-                maxLength={100}
-              />
-              <p className="field-help">Lowercase letters, numbers, and hyphens.</p>
-            </div>
-          </div>
-          {mutation.isError && (
-            <p role="alert" className="form-error">
-              {mutation.error.message}
-            </p>
-          )}
-          <div className="actions">
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Creating…" : "Create unit"}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setCreating(false)}
-              disabled={mutation.isPending}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
-      )}
+      {creating && <CreateUnitForm onCancel={() => setCreating(false)} />}
       {units.isPending ? (
         <LoadingState label="Loading your units" />
       ) : units.isError ? (
@@ -123,13 +64,7 @@ function UnitsContent() {
               params={{ unitId: unit.id }}
               className="unit-list-row"
             >
-              <Avatar name={unit.display_name} url={unit.icon_url} />
-              <div>
-                <h2>{unit.display_name}</h2>
-                <p>
-                  {unit.member_count} {unit.member_count === 1 ? "member" : "members"}
-                </p>
-              </div>
+              <UnitIdentity unit={unit} />
               <ArrowRight size={19} />
             </Link>
           ))}

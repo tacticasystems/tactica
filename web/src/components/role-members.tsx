@@ -1,13 +1,16 @@
-import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { useWorkspace } from "./workspace";
-import { Avatar, LoadingState } from "./shared";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { useState } from "react";
+
 import { canAssignRole } from "../lib/permissions";
 import { errorMessage, queryClient } from "../lib/queries";
 import type { Access, Member, Role } from "../lib/types";
+
+import { Avatar } from "./avatar";
+import { LoadingState } from "./loading-state";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { useWorkspace } from "./workspace-context";
 
 export function RoleMembers({
   role,
@@ -26,11 +29,13 @@ export function RoleMembers({
     queryKey: [...queryKey, "members", "all"],
     queryFn: ({ signal }) => source.allMembers(unit.id, signal),
   });
+
   const bindingKey = [...queryKey, "role-members", role.id];
   const bindings = useQuery({
     queryKey: bindingKey,
     queryFn: ({ signal }) => source.roleMembers(unit.id, role.id, signal),
   });
+
   const change = useMutation({
     mutationFn: ({ member, assigned }: { member: Member; assigned: boolean }) =>
       source.setRoleMember(unit.id, role.id, member.id, assigned),
@@ -56,17 +61,20 @@ export function RoleMembers({
       void queryClient.invalidateQueries({ queryKey: [...queryKey, "members"] });
     },
   });
+
   const manageable = canAssignRole(access, role);
   const busy = pending || change.isPending || bindings.isFetching;
   const ids = new Set(bindings.data);
   const assigned = roster.data?.filter((member) => ids.has(member.id)) ?? [];
   const candidates = roster.data?.filter((member) => !ids.has(member.id)) ?? [];
   const list = adding && manageable ? candidates : assigned;
+
   const filtered = list.filter((member) =>
     `${member.display_name ?? ""} ${member.username}`
       .toLocaleLowerCase()
       .includes(search.trim().toLocaleLowerCase()),
   );
+
   return (
     <section
       className="role-editor role-members"

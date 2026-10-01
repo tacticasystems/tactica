@@ -75,7 +75,7 @@ jobs:
 
   web:
     name: Web
-    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.web == 'true'
+    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.web == 'true' || needs.changes.outputs.rust == 'true'
     needs: changes
     permissions:
       contents: read

@@ -1,12 +1,17 @@
-import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { useWorkspace } from "../components/workspace";
-import { Avatar, EmptyState, ErrorState, LoadingState, PageHeading } from "../components/shared";
-import { Button } from "../components/ui/button";
-import { safeImage } from "../lib/utils";
+import { Search } from "lucide-react";
+import { useState } from "react";
+
 import { canManageRoles } from "../lib/permissions";
+
+import { EmptyState } from "../components/empty-state";
+import { ErrorState } from "../components/error-state";
+import { LoadingState } from "../components/loading-state";
+import { PageHeading } from "../components/page-heading";
+import { PersonnelTable } from "../components/personnel-table";
+import { RosterPagination } from "../components/roster-pagination";
+import { Input } from "../components/ui/input";
+import { useWorkspace } from "../components/workspace-context";
 
 export function PersonnelPage() {
   const { unit, source, preview, queryKey } = useWorkspace();
@@ -17,24 +22,30 @@ export function PersonnelPage() {
     queryFn: ({ signal }) => source.members(unit.id, offset, signal),
     placeholderData: keepPreviousData,
   });
+
   const ranks = useQuery({
     queryKey: [...queryKey, "ranks"],
     queryFn: ({ signal }) => source.ranks(unit.id, signal),
   });
+
   const roles = useQuery({
     queryKey: [...queryKey, "roles"],
     queryFn: ({ signal }) => source.roles(unit.id, signal),
   });
+
   const access = useQuery({
     queryKey: [...queryKey, "access"],
     queryFn: ({ signal }) => source.access(unit.id, signal),
   });
+
   const linkRoles = !!access.data && canManageRoles(access.data);
+
   const filtered = members.data?.filter((member) =>
     (member.display_name ?? member.username)
       .toLocaleLowerCase()
       .includes(search.trim().toLocaleLowerCase()),
   );
+
   return (
     <>
       <PageHeading
@@ -44,7 +55,7 @@ export function PersonnelPage() {
           <label className="search-input">
             <Search size={17} aria-hidden="true" />
             <span className="sr-only">Search this page</span>
-            <input
+            <Input
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -78,105 +89,27 @@ export function PersonnelPage() {
             : "Choose the previous page if the roster has changed."}
         </EmptyState>
       ) : (
-        <div className="table-wrap">
-          <table className="roster-table">
-            <caption className="sr-only">{unit.display_name} personnel roster</caption>
-            <thead>
-              <tr>
-                <th scope="col">Member</th>
-                <th scope="col">Rank</th>
-                <th scope="col">Roles</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered?.map((member) => {
-                const name = member.display_name ?? member.username;
-                const rank = ranks.data?.find((rank) => rank.id === member.rank_id);
-                const icon = safeImage(rank?.icon_url ?? null);
-                return (
-                  <tr key={member.id}>
-                    <td>
-                      <div className="member-name">
-                        <Avatar name={name} url={member.icon_url} />
-                        <strong>{name}</strong>
-                        {member.display_name && member.display_name !== member.username && (
-                          <span className="member-username">{member.username}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="rank-name">
-                        {icon && <img src={icon} alt="" className="rank-icon" />}
-                        <span>{rank?.display_name ?? rank?.slug ?? "Unspecified rank"}</span>
-                        {preview && <span className="rank-abbreviation">{rank?.slug}</span>}
-                      </div>
-                    </td>
-                    <td>
-                      <ul className="member-role-pills" aria-label={`${name} roles`}>
-                        {roles.data
-                          ?.filter(
-                            (role) => role.kind !== "everyone" && member.role_ids.includes(role.id),
-                          )
-                          .map((role) => (
-                            <li key={role.id}>
-                              {linkRoles ? (
-                                <Link
-                                  className="role-pill"
-                                  to="/units/$unitId/roles"
-                                  params={{ unitId: unit.id }}
-                                  search={{ roleId: role.id }}
-                                >
-                                  {role.display_name}
-                                </Link>
-                              ) : (
-                                <span className="role-pill">{role.display_name}</span>
-                              )}
-                            </li>
-                          ))}
-                      </ul>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <PersonnelTable
+          members={filtered ?? []}
+          ranks={ranks.data ?? []}
+          roles={roles.data ?? []}
+          unitId={unit.id}
+          unitName={unit.display_name}
+          preview={preview}
+          linkRoles={linkRoles}
+        />
       )}
       {(offset > 0 || unit.member_count > 20) && (
-        <div className="pagination">
-          <span>
-            Showing {offset + (members.data?.length ? 1 : 0)}–{offset + (members.data?.length ?? 0)}{" "}
-            of {unit.member_count}
-          </span>
-          <div>
-            <Button
-              variant="outline"
-              disabled={offset === 0 || members.isFetching}
-              onClick={() => {
-                setSearch("");
-                setOffset(Math.max(0, offset - 20));
-              }}
-            >
-              <ChevronLeft size={16} />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              disabled={
-                (members.data?.length ?? 0) < 20 ||
-                offset + (members.data?.length ?? 0) >= unit.member_count ||
-                members.isFetching
-              }
-              onClick={() => {
-                setSearch("");
-                setOffset(offset + 20);
-              }}
-            >
-              Next
-              <ChevronRight size={16} />
-            </Button>
-          </div>
-        </div>
+        <RosterPagination
+          offset={offset}
+          count={members.data?.length ?? 0}
+          total={unit.member_count}
+          pending={members.isFetching}
+          onPageChange={(nextOffset) => {
+            setSearch("");
+            setOffset(nextOffset);
+          }}
+        />
       )}
     </>
   );
