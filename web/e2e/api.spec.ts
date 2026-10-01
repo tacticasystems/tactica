@@ -1,0 +1,251 @@
+import { randomUUID } from "node:crypto";
+import { expect, test as base, type APIRequestContext, type Page } from "@playwright/test";
+import { reorderRole } from "./support/reorder-role";
+
+const password = "E2e-test-password-42!";
+const credentials = () => ({ username: `e2e_${randomUUID().replaceAll("-", "")}`, password });
+
+async function register(page: Page, username: string) {
+  await page.goto("/register");
+  await page.getByLabel("Username", { exact: true }).fill(username);
+  await page.getByLabel("Email", { exact: true }).fill(`${username}@example.test`);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByLabel("Confirm password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Your units", exact: true })).toBeVisible();
+}
+
+async function signIn(page: Page, username: string) {
+  await page.getByLabel("Username", { exact: true }).fill(username);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Your units", exact: true })).toBeVisible();
+}
+
+async function signOut(page: Page, isMobile: boolean) {
+  if (isMobile) await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Welcome back", exact: true })).toBeVisible();
+}
+
+async function session(page: Page) {
+  return page.evaluate(() => JSON.parse(localStorage.getItem("tactica.session.v1")!));
+}
+
+async function apiGet(page: Page, request: APIRequestContext, path: string) {
+  const { access_token } = await session(page);
+  const response = await request.get(`/api/v1${path}`, {
+    headers: { Authorization: `Bearer ${access_token}` },
+  });
+  expect(response.ok(), `GET ${path}: ${response.status()}`).toBeTruthy();
+  return response.json();
+}
+
+async function createRole(page: Page, name: string) {
+  await page.getByRole("button", { name: "New role", exact: true }).click();
+  await page.getByLabel("Role name", { exact: true }).fill(name);
+  await page.getByRole("button", { name: "Create role", exact: true }).click();
+  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+}
+
+const test = base.extend<{ workspace: { username: string; unitId: string; unitName: string } }>({
+  workspace: async ({ page }, use) => {
+    const { username } = credentials();
+    await register(page, username);
+    await page.getByRole("button", { name: "Create a unit", exact: true }).click();
+    const unitName = `Unit ${username}`;
+    await page.getByLabel("Unit name", { exact: true }).fill(unitName);
+    await page.getByLabel("Unit handle", { exact: true }).fill(username.replaceAll("_", "-"));
+    await page.getByRole("button", { name: "Create unit", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Personnel", exact: true })).toBeVisible();
+    await expect(page.getByRole("table")).toBeVisible();
+    const unitId = new URL(page.url()).pathname.split("/")[2];
+    await use({ username, unitId, unitName });
+  },
+});
+
+test("registration, unit creation, profile and sign-in survive a new session", async ({
+  page,
+  request,
+  workspace,
+  isMobile,
+}) => {
+  await expect(page.getByRole("row").filter({ hasText: workspace.username })).toBeVisible();
+  await page.goto(`/units/${workspace.unitId}/profile`);
+  await expect(page.getByLabel("Display name")).toHaveValue(workspace.unitName);
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+    .toBeLessThanOrEqual(page.viewportSize()!.width);
+  const before = await session(page);
+  await signOut(page, isMobile);
+  const revoked = await request.post("/api/v1/auth/refresh", {
+    data: { refresh_token: before.refresh_token },
+  });
+  expect(revoked.status()).toBe(401);
+
+  await signIn(page, workspace.username);
+  await page
+    .getByRole("link")
+    .filter({ has: page.getByRole("heading", { name: workspace.unitName, exact: true }) })
+    .click();
+  await expect(page.getByRole("heading", { name: "Personnel", exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("row").filter({ hasText: workspace.username })).toBeVisible();
+});
+
+test("role edits persist and built-in roles remain protected", async ({
+  page,
+  request,
+  workspace,
+}) => {
+  await page.goto(`/units/${workspace.unitId}/roles`);
+  await createRole(page, "Medic");
+  await page.getByLabel("Description", { exact: false }).fill("Treats the unit");
+  await page.getByRole("checkbox", { name: /^Assign roles/ }).check();
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Role saved." })).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Description", { exact: false })).toHaveValue("Treats the unit");
+  await expect(page.getByRole("checkbox", { name: /^Assign roles/ })).toBeChecked();
+  const { roles } = await apiGet(page, request, `/units/${workspace.unitId}/roles`);
+  expect(
+    roles.find((role: { display_name: string }) => role.display_name === "Medic"),
+  ).toMatchObject({ permissions: 8, description: "Treats the unit" });
+
+  await page.getByRole("button", { name: /Administrator Built-in administrator/ }).click();
+  await expect(page.getByRole("checkbox").first()).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Delete role", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Everyone Applies to every member" }).click();
+  await expect(page.getByLabel("Role name", { exact: true })).toHaveAttribute("readonly");
+  await expect(page.getByRole("button", { name: "Delete role", exact: true })).toHaveCount(0);
+});
+
+test("assignments, removals and deletion update the persisted roster", async ({
+  page,
+  request,
+  workspace,
+}) => {
+  await page.goto(`/units/${workspace.unitId}/roles`);
+  await createRole(page, "Medic");
+  const roleUrl = page.url();
+  const roleId = new URL(roleUrl).searchParams.get("roleId")!;
+  await page.getByRole("tab", { name: "Members", exact: true }).click();
+  await page.getByRole("button", { name: "Add members", exact: true }).click();
+  await page
+    .getByRole("button", { name: `Add ${workspace.username} to Medic`, exact: true })
+    .click();
+  await expect(page.getByRole("status").filter({ hasText: "added to Medic" })).toBeVisible();
+  await page.goto(`/units/${workspace.unitId}/personnel`);
+  const pills = page.getByRole("list", { name: `${workspace.username} roles`, exact: true });
+  await expect(pills.getByRole("link", { name: "Medic", exact: true })).toBeVisible();
+  await page.reload();
+  await pills.getByRole("link", { name: "Medic", exact: true }).click();
+  await page.getByRole("tab", { name: "Members", exact: true }).click();
+  await page
+    .getByRole("button", { name: `Remove ${workspace.username} from Medic`, exact: true })
+    .click();
+  await expect(page.getByRole("status").filter({ hasText: "removed from Medic" })).toBeVisible();
+  const unassigned = await apiGet(
+    page,
+    request,
+    `/units/${workspace.unitId}/roles/${roleId}/members`,
+  );
+  expect(unassigned.member_ids).toEqual([]);
+
+  await page.getByRole("button", { name: "Add members", exact: true }).click();
+  await page
+    .getByRole("button", { name: `Add ${workspace.username} to Medic`, exact: true })
+    .click();
+  await expect(page.getByRole("status").filter({ hasText: "added to Medic" })).toBeVisible();
+  await page.getByRole("tab", { name: "Permissions", exact: true }).click();
+  await page.getByRole("button", { name: "Delete role", exact: true }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Delete role", exact: true })
+    .click();
+  await expect(page.getByRole("alertdialog")).toBeHidden();
+  await page.goto(`/units/${workspace.unitId}/personnel`);
+  await expect(page.getByRole("table")).toBeVisible();
+  await expect(pills.getByRole("link", { name: "Medic", exact: true })).toHaveCount(0);
+  const { members } = await apiGet(page, request, `/units/${workspace.unitId}/members`);
+  expect(members[0].role_ids).not.toContain(roleId);
+});
+
+test("keyboard reordering persists through the API's opposite sort order", async ({
+  page,
+  request,
+  workspace,
+  isMobile,
+}) => {
+  test.skip(isMobile, "Keyboard drag-and-drop uses the desktop interaction.");
+  await page.goto(`/units/${workspace.unitId}/roles`);
+  await createRole(page, "First role");
+  await createRole(page, "Second role");
+  await reorderRole(page, "Second role", "First role", "ArrowUp");
+  await page.reload();
+  await expect(page.locator(".role-row strong")).toHaveText([
+    "Administrator",
+    "Second role",
+    "First role",
+    "Everyone",
+  ]);
+  const { roles } = await apiGet(page, request, `/units/${workspace.unitId}/roles`);
+  expect(roles.map((role: { display_name: string }) => role.display_name)).toEqual([
+    "Administrator",
+    "Second role",
+    "First role",
+    "Everyone",
+  ]);
+});
+
+test("another account cannot read or edit a unit's roster and roles", async ({
+  page,
+  request,
+  workspace,
+  isMobile,
+}) => {
+  await signOut(page, isMobile);
+  const outsider = credentials();
+  await register(page, outsider.username);
+  await page.goto(`/units/${workspace.unitId}/personnel`);
+  await expect(
+    page.getByRole("heading", { name: "This unit is for its members", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("table")).toHaveCount(0);
+  await page.goto(`/units/${workspace.unitId}/roles`);
+  await expect(
+    page.getByRole("heading", { name: "This unit is for its members", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "New role", exact: true })).toHaveCount(0);
+  const { access_token } = await session(page);
+  const response = await request.post(`/api/v1/units/${workspace.unitId}/roles`, {
+    headers: { Authorization: `Bearer ${access_token}` },
+    data: { display_name: "Forbidden", permissions: 0 },
+  });
+  expect(response.status()).toBe(403);
+});
+
+test("an expired client session refreshes once and stays signed in", async ({
+  page,
+  request,
+  workspace,
+}) => {
+  const before = await session(page);
+  await page.evaluate(() => {
+    const key = "tactica.session.v1";
+    const value = JSON.parse(localStorage.getItem(key)!);
+    localStorage.setItem(key, JSON.stringify({ ...value, expires_at: 0 }));
+  });
+  const refreshed = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/v1/auth/refresh") && response.request().method() === "POST",
+  );
+  await page.reload();
+  expect((await refreshed).status()).toBe(200);
+  await expect(page.getByRole("row").filter({ hasText: workspace.username })).toBeVisible();
+  const after = await session(page);
+  expect(after.refresh_token).not.toBe(before.refresh_token);
+  expect(after.session_id).toBe(before.session_id);
+  expect(after.expires_at).toBeGreaterThan(Date.now());
+  await apiGet(page, request, "/auth/me");
+});

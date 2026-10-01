@@ -6,6 +6,10 @@ import {
   Navigate,
   Outlet,
 } from "@tanstack/react-router";
+
+import { sessionSnapshot } from "./lib/api";
+
+import { Button } from "./components/ui/button";
 import { AuthPage } from "./pages/auth";
 import { UnitsPage } from "./pages/units";
 import { PersonnelPage } from "./pages/personnel";
@@ -14,7 +18,6 @@ import { RolesPage } from "./pages/roles";
 import { ProfilePage } from "./pages/profile";
 import { OverviewPage } from "./pages/overview";
 import { UnitWorkspace } from "./components/workspace";
-import { sessionSnapshot } from "./lib/api";
 
 const root = createRootRoute({
   component: Outlet,
@@ -29,9 +32,9 @@ const root = createRootRoute({
     <main className="standalone-state">
       <h1>Something went wrong</h1>
       <p>{error instanceof Error ? error.message : "Please try again."}</p>
-      <button className="button button-outline" onClick={reset}>
+      <Button variant="outline" onClick={reset}>
         Try again
-      </button>
+      </Button>
     </main>
   ),
 });

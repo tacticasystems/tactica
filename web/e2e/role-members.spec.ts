@@ -107,7 +107,7 @@ async function workspace(page: Page, permissions = 8, owner = false) {
     await route.fulfill({ json: body });
   });
   await page.goto("/units/unit/roles");
-  await page.getByRole("button", { name: "Members", exact: true }).click();
+  await page.getByRole("tab", { name: "Members", exact: true }).click();
   return { writes, state, ids };
 }
 
@@ -187,7 +187,7 @@ test("the personnel table shows pills and refreshes after assigning and removing
   if (testInfo.project.name === "mobile")
     await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
   await page.getByRole("link", { name: "Roles", exact: true }).click();
-  await page.getByRole("button", { name: "Members", exact: true }).click();
+  await page.getByRole("tab", { name: "Members", exact: true }).click();
   await page.getByRole("button", { name: "Add members", exact: true }).click();
   await page.getByRole("searchbox").fill("user-0");
   await page.getByRole("button", { name: "Add Person 0 to Medic", exact: true }).click();
@@ -205,7 +205,7 @@ test("the personnel table shows pills and refreshes after assigning and removing
   if (testInfo.project.name === "mobile")
     await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
   await page.getByRole("link", { name: "Roles", exact: true }).click();
-  await page.getByRole("button", { name: "Members", exact: true }).click();
+  await page.getByRole("tab", { name: "Members", exact: true }).click();
   await page.getByRole("button", { name: "Remove Person 0 from Medic", exact: true }).click();
   await expect(page.getByText("Person 0 removed from Medic.", { exact: true })).toBeVisible();
   if (testInfo.project.name === "mobile")
@@ -221,7 +221,7 @@ test("a failed membership lookup can be retried", async ({ page }) => {
   const { state } = await workspace(page);
   state.failRead = true;
   await page.reload();
-  await page.getByRole("button", { name: "Members", exact: true }).click();
+  await page.getByRole("tab", { name: "Members", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("Could not load assignments.");
   state.failRead = false;
   await page.getByRole("button", { name: "Try again", exact: true }).click();
@@ -266,10 +266,10 @@ test("failed assignments remain unassigned and refresh the caller's permissions"
 
 test("permission drafts survive switching between Permissions and Members", async ({ page }) => {
   await workspace(page, 127, true);
-  await page.getByRole("button", { name: "Permissions", exact: true }).click();
+  await page.getByRole("tab", { name: "Permissions", exact: true }).click();
   await page.getByRole("textbox", { name: "Role name", exact: true }).fill("Field medic");
-  await page.getByRole("button", { name: "Members", exact: true }).click();
-  await page.getByRole("button", { name: "Permissions", exact: true }).click();
+  await page.getByRole("tab", { name: "Members", exact: true }).click();
+  await page.getByRole("tab", { name: "Permissions", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Role name", exact: true })).toHaveValue(
     "Field medic",
   );
@@ -282,7 +282,7 @@ test("permission drafts survive switching between Permissions and Members", asyn
 for (const direction of ["back", "forward"] as const) {
   test(`dirty role drafts survive browser ${direction} until discarded`, async ({ page }) => {
     await workspace(page, 127, true);
-    await page.getByRole("button", { name: "Permissions", exact: true }).click();
+    await page.getByRole("tab", { name: "Permissions", exact: true }).click();
     await page.getByRole("button", { name: "New role", exact: true }).click();
     await expect(page).toHaveURL(/roleId=new$/);
     if (direction === "forward") {
@@ -328,7 +328,7 @@ test("role and roster caches refresh after a committed deletion loses its respon
   if (testInfo.project.name === "mobile")
     await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
   await page.getByRole("link", { name: "Roles", exact: true }).click();
-  await page.getByRole("button", { name: "Permissions", exact: true }).click();
+  await page.getByRole("tab", { name: "Permissions", exact: true }).click();
   state.loseResponse = true;
   await page.getByRole("button", { name: "Delete role", exact: true }).click();
   await page
@@ -359,7 +359,7 @@ for (const initiallyAssigned of [false, true]) {
     if (testInfo.project.name === "mobile")
       await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
     await page.getByRole("link", { name: "Roles", exact: true }).click();
-    await page.getByRole("button", { name: "Members", exact: true }).click();
+    await page.getByRole("tab", { name: "Members", exact: true }).click();
     state.loseResponse = true;
     if (initiallyAssigned) {
       await page.getByRole("button", { name: "Remove Person 0 from Medic", exact: true }).click();

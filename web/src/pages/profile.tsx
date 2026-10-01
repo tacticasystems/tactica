@@ -1,13 +1,16 @@
-import { useWorkspace } from "../components/workspace";
-import { Avatar, PageHeading } from "../components/shared";
+import { safeImage } from "../lib/utils";
+
+import { PageHeading } from "../components/page-heading";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { safeImage } from "../lib/utils";
+import { UnitIdentity } from "../components/unit-identity";
+import { useWorkspace } from "../components/workspace-context";
 
 export function ProfilePage() {
   const { unit } = useWorkspace();
   const banner = safeImage(unit.banner_url);
+
   return (
     <>
       <PageHeading
@@ -17,13 +20,7 @@ export function ProfilePage() {
       <section className="unit-profile-fields" aria-label="Unit profile">
         {banner && <img src={banner} alt="Unit banner" className="unit-banner" />}
         <div className="unit-profile">
-          <Avatar name={unit.display_name} url={unit.icon_url} />
-          <div>
-            <h2>{unit.display_name}</h2>
-            <p>
-              {unit.member_count} {unit.member_count === 1 ? "member" : "members"}
-            </p>
-          </div>
+          <UnitIdentity unit={unit} />
         </div>
         <div className="unit-profile-field">
           <Label htmlFor="unit-name">Display name</Label>

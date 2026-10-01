@@ -1,24 +1,22 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
-import { useWorkspace } from "../components/workspace";
-import { Avatar, PageHeading } from "../components/shared";
+
 import { safeImage } from "../lib/utils";
+
+import { PageHeading } from "../components/page-heading";
+import { UnitIdentity } from "../components/unit-identity";
+import { useWorkspace } from "../components/workspace-context";
 
 export function OverviewPage() {
   const { unit } = useWorkspace();
   const banner = safeImage(unit.banner_url);
+
   return (
     <>
       <PageHeading title="Unit overview" description="Your unit, at a glance." />
       {banner && <img src={banner} alt="" className="unit-banner" />}
       <section className="unit-profile">
-        <Avatar name={unit.display_name} url={unit.icon_url} />
-        <div>
-          <h2>{unit.display_name}</h2>
-          <p>
-            {unit.member_count} {unit.member_count === 1 ? "member" : "members"} · {unit.slug}
-          </p>
-        </div>
+        <UnitIdentity unit={unit} showSlug />
       </section>
       {unit.biography && <p className="unit-biography">{unit.biography}</p>}
       <div className="overview-links">
