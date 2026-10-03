@@ -216,7 +216,7 @@ jobs:
         run: mise run build
 
       - name: Install browser and system dependencies
-        run: pnpm --dir web exec playwright install --with-deps chromium
+        run: pnpm --dir web exec playwright install --with-deps ${{ matrix.browser }}
 
       - name: Run E2E tests
         run: mise run //web:test-e2e --project=${{ matrix.browser }}-${{ matrix.scale }}
