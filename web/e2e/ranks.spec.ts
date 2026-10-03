@@ -836,7 +836,7 @@ test("committed member drafts reconcile before later server changes", async ({ p
   await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeEnabled();
 });
 
-test("rank view stacks members beneath plain details and navigates through breadcrumbs", async ({
+test("rank view shows its abbreviation beside the title and navigates through breadcrumbs", async ({
   page,
 }, info) => {
   await workspace(page);
@@ -848,13 +848,10 @@ test("rank view stacks members beneath plain details and navigates through bread
     page.locator(".page-heading").getByRole("link", { name: "Edit rank", exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("tab")).toHaveCount(0);
-  const details = page.getByRole("region", { name: "Rank details", exact: true });
+  await expect(page.locator(".page-title .rank-abbreviation")).toHaveText("Maj.");
+  await expect(page.getByRole("region", { name: "Rank details", exact: true })).toHaveCount(0);
   const members = page.getByRole("region", { name: "Major members", exact: true });
-  await expect(details).toHaveCSS("border-top-width", "0px");
   await expect(members).toHaveCSS("border-top-width", "1px");
-  const detailsBox = await details.boundingBox();
-  const membersBox = await members.boundingBox();
-  expect(membersBox!.y).toBeGreaterThan(detailsBox!.y + detailsBox!.height);
   await expect(page.getByText("1 member has this rank.")).toBeVisible();
   await page.screenshot({ path: info.outputPath("rank-view-stacked.png"), fullPage: true });
   await breadcrumbs.getByRole("link", { name: "Ranks", exact: true }).click();

@@ -218,6 +218,8 @@ async fn me(Storage(stg): Storage, Principal(principal): Principal) -> Result<im
             }
         }
 
-        _ => Err(Error::Unauthorized("Invalid principal type".to_string())),
+        tactica_auth::principal::Principal::Service(_) => {
+            Err(Error::Unauthorized("Invalid principal type".to_string()))
+        }
     }
 }

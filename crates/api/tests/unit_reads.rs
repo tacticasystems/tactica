@@ -314,6 +314,10 @@ async fn public_units_include_total_member_counts_even_when_paginated() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keep the roster access scenario and its assertions together"
+)]
 async fn unit_members_can_read_only_the_requested_units_roster_data() {
     let api = ApiFixture::new().await;
     let owner = user(&api, "owner").await;

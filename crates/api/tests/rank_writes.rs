@@ -913,10 +913,10 @@ async fn member_edits_are_atomic_and_display_names_are_unit_specific() {
     let rank = create_rank(&api, &owner_token, unit.unit.id, "Sgt.").await;
     let token = api.jwt.generate_jwt_for_user(actor).expect("token");
     let path = format!("/api/v1/units/{}/members/{}", unit.unit.id, member.id);
-    let patch =
+    let update_body =
         json!({"display_name": "  Unit nickname  ", "rank_id": rank.id, "role_ids": [medic.id]});
     assert_eq!(
-        request(&api, "PATCH", &path, Some(&token), patch.clone())
+        request(&api, "PATCH", &path, Some(&token), update_body.clone())
             .await
             .0,
         StatusCode::NO_CONTENT
@@ -1030,7 +1030,7 @@ async fn member_edits_are_atomic_and_display_names_are_unit_specific() {
         );
     }
     assert_eq!(
-        request(&api, "PATCH", &path, None, patch).await.0,
+        request(&api, "PATCH", &path, None, update_body).await.0,
         StatusCode::UNAUTHORIZED
     );
     assert_eq!(

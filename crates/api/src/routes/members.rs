@@ -154,7 +154,7 @@ async fn unit_access(
     Principal(principal): Principal,
     Path(unit_id): Path<UnitId>,
 ) -> Result<Json<UnitAccessResponse>> {
-    let user_id = super::common::require_user(principal.clone())?;
+    let user_id = super::common::require_user(&principal)?;
     require_unit_member(storage.as_ref(), principal, unit_id).await?;
     let unit = super::common::require_unit(storage.as_ref(), unit_id).await?;
     let member = UnitMembershipStore::get_by_user_and_unit(storage.as_ref(), user_id, unit_id)
@@ -236,7 +236,7 @@ async fn set_member_rank(
     Path((unit_id, member_id)): Path<(UnitId, MemberId)>,
     Json(input): Json<SetMemberRankRequest>,
 ) -> Result<StatusCode> {
-    let actor_id = super::common::require_user(principal)?;
+    let actor_id = super::common::require_user(&principal)?;
     UnitRankManagementStore::set_member_rank(
         storage.as_ref(),
         actor_id,
@@ -302,7 +302,7 @@ async fn update_member(
     Path((unit_id, member_id)): Path<(UnitId, MemberId)>,
     Json(mut input): Json<UpdateMemberRequest>,
 ) -> Result<StatusCode> {
-    let actor_id = super::common::require_user(principal)?;
+    let actor_id = super::common::require_user(&principal)?;
     if input.display_name.is_none() && input.rank_id.is_none() && input.role_ids.is_none() {
         return Err(Error::Validation(
             "Provide at least one member field".to_owned(),
@@ -319,10 +319,10 @@ async fn update_member(
             ));
         }
     }
-    if let Some(ids) = &input.role_ids {
-        if ids.iter().collect::<std::collections::HashSet<_>>().len() != ids.len() {
-            return Err(Error::Validation("Role IDs must be unique".to_owned()));
-        }
+    if let Some(ids) = &input.role_ids
+        && ids.iter().collect::<std::collections::HashSet<_>>().len() != ids.len()
+    {
+        return Err(Error::Validation("Role IDs must be unique".to_owned()));
     }
     UnitMemberManagementStore::patch_managed_member(
         storage.as_ref(),

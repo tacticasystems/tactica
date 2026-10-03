@@ -37,7 +37,7 @@ async fn list_my_units(
     Query(pagination): Query<ListPagination>,
 ) -> Result<Json<v1::units::ListUnitsResponse>> {
     super::common::validate_pagination(&pagination)?;
-    let user_id = super::common::require_user(principal)?;
+    let user_id = super::common::require_user(&principal)?;
     UserStore::get(storage.as_ref(), user_id)
         .await?
         .filter(|user| user.is_active)
@@ -141,15 +141,10 @@ async fn create_unit(
     Principal(prn): Principal,
     Json(body): Json<v1::units::CreateUnitRequest>,
 ) -> Result<impl IntoResponse> {
-    if !matches!(prn, principal::Principal::User(_)) {
+    let principal::Principal::User(user_id) = prn else {
         return Err(crate::error::Error::Unauthorized(
             "Only users can create units".to_string(),
         ));
-    }
-
-    let user_id = match prn {
-        principal::Principal::User(user_id) => user_id,
-        _ => unreachable!(),
     };
 
     let created = UnitStore::create_with_defaults(
@@ -179,7 +174,9 @@ async fn create_unit(
     Ok(Json(v1::units::CreateUnitResponse {
         id: created.unit.id,
         slug: created.unit.slug,
-        display_name: created.unit.display_name.unwrap(),
+        display_name: created.unit.display_name.ok_or_else(|| {
+            Error::Other(anyhow::anyhow!("Created unit is missing its display name"))
+        })?,
         icon_url: created.unit.icon_url,
         banner_url: created.unit.banner_url,
         biography: created.unit.biography,

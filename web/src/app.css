@@ -1770,14 +1770,17 @@ fieldset {
   gap: 28px;
   max-width: 52rem;
 }
-.rank-summary {
-  min-width: 0;
+.page-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
-.rank-summary .editor-heading {
-  margin-bottom: 20px;
-}
-.rank-summary .member-details {
-  padding: 0;
+.page-title .rank-abbreviation {
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--secondary);
+  padding: 3px 8px;
 }
 .page-heading:has(+ .rank-view) p {
   white-space: pre-wrap;

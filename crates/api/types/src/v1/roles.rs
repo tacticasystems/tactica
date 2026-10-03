@@ -64,6 +64,10 @@ pub struct UpdateRoleRequest {
     pub permissions: Option<i64>,
 }
 
+#[expect(
+    clippy::option_option,
+    reason = "PATCH distinguishes omitted, null, and a value"
+)]
 fn description_patch<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Option<Option<String>>, D::Error> {

@@ -99,6 +99,10 @@ async fn create_role(api: &ApiFixture, token: &str, unit_id: UnitId, name: &str)
 }
 
 #[tokio::test(flavor = "multi_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keep the integration scenario and its assertions together"
+)]
 async fn owner_can_manage_roles_and_assignments_idempotently() {
     let api = ApiFixture::new().await;
     let owner = user(&api, "owner").await;
@@ -213,6 +217,10 @@ async fn owner_can_manage_roles_and_assignments_idempotently() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keep the integration scenario and its assertions together"
+)]
 async fn role_writes_validate_fields_conflicts_and_unit_scope() {
     let api = ApiFixture::new().await;
     let owner = user(&api, "owner").await;
@@ -449,6 +457,10 @@ struct HierarchyFixture {
 }
 
 impl HierarchyFixture {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Set up the complete role hierarchy fixture together"
+    )]
     async fn new(grants: i64) -> Self {
         let api = ApiFixture::new().await;
         let owner_id = user(&api, "owner").await;
@@ -595,6 +607,10 @@ impl HierarchyFixture {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keep the integration scenario and its assertions together"
+)]
 async fn role_hierarchy_uses_highest_assigned_role_independently_of_its_permissions() {
     let f = HierarchyFixture::new(4 | 8).await;
     // Permission bits are combined across roles, including a zero-permission ceiling.
@@ -770,6 +786,10 @@ async fn manage_roles_and_assign_roles_are_separate_and_revocation_is_immediate(
 }
 
 #[tokio::test(flavor = "multi_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keep the integration scenario and its assertions together"
+)]
 async fn administrator_obeys_hierarchy_and_owner_can_reorder_every_role() {
     let f = HierarchyFixture::new(1).await;
     assert_eq!(
@@ -962,6 +982,10 @@ async fn permissions_do_not_leak_across_units_or_stop_at_a_listing_page() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keep the integration scenario and its assertions together"
+)]
 async fn builtin_roles_are_immutable_except_everyone_permissions_and_stay_pinned() {
     let f = HierarchyFixture::new(0).await;
     for body in [
@@ -1084,6 +1108,10 @@ async fn builtin_roles_are_immutable_except_everyone_permissions_and_stay_pinned
 }
 
 #[tokio::test(flavor = "multi_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keep the integration scenario and its assertions together"
+)]
 async fn everyone_is_implicit_for_current_and_future_members_and_changes_apply_immediately() {
     let f = HierarchyFixture::new(0).await;
     let newcomer_id = user(&f.api, "newcomer").await;
@@ -1345,6 +1373,10 @@ async fn builtin_administrator_is_assignable_and_does_not_define_ownership() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keep the integration scenario and its assertions together"
+)]
 async fn role_members_are_paginated_scoped_and_include_implicit_everyone() {
     let api = ApiFixture::new().await;
     let owner = user(&api, "binding-owner").await;

@@ -42,6 +42,14 @@ export function RankPage() {
     <>
       <PageHeading
         title={rank.display_name ?? rank.slug}
+        titleAdornment={
+          <>
+            {icon && <img src={icon} className="rank-icon" alt="" />}
+            {rank.display_name && rank.display_name !== rank.slug && (
+              <span className="rank-abbreviation">{rank.slug}</span>
+            )}
+          </>
+        }
         description={rank.description?.trim() ? rank.description : `Rank in ${unit.display_name}.`}
         action={
           access.data &&
@@ -59,23 +67,7 @@ export function RankPage() {
         }
       />
       <div className="rank-view">
-        <section className="rank-summary" aria-label="Rank details">
-          <header className="editor-heading">
-            <div className="rank-name">
-              {icon && <img src={icon} className="rank-icon" alt="" />}
-              <h2>Rank details</h2>
-            </div>
-          </header>
-          <dl className="member-details">
-            <div>
-              <dt>Abbreviation</dt>
-              <dd>{rank.slug}</dd>
-            </div>
-          </dl>
-          {access.isError && (
-            <ErrorState error={access.error} retry={() => void access.refetch()} />
-          )}
-        </section>
+        {access.isError && <ErrorState error={access.error} retry={() => void access.refetch()} />}
         <RankMembers key={rank.id} rank={rank} />
       </div>
     </>

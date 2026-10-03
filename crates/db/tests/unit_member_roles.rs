@@ -89,6 +89,26 @@ async fn list(storage: &PgConnection, filter: UnitMemberRoleFilter) -> Vec<UnitM
         .expect("list assignments")
 }
 
+async fn assert_assignment_pagination(storage: &PgConnection) {
+    let all = list(storage, UnitMemberRoleFilter::default()).await;
+    let page = UnitMemberRoleStore::list(
+        storage,
+        UnitMemberRoleFilter::default(),
+        &ListPagination::default().offset(1).limit(1),
+    )
+    .await
+    .expect("page assignments");
+    assert_eq!(page.len(), 1);
+    assert_eq!(
+        page.first().expect("one assignment").member_id,
+        all.get(1).expect("second assignment").member_id
+    );
+    assert_eq!(
+        page.first().expect("one assignment").role_id,
+        all.get(1).expect("second assignment").role_id
+    );
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn assignments_are_many_to_many_filterable_and_removable() {
     let database = support::DatabaseFixture::new().await;
@@ -168,23 +188,7 @@ async fn assignments_are_many_to_many_filterable_and_removable() {
         .member_id(vec![member.id])
         .role_id(vec![second]);
     assert!(list(&storage, filter).await.is_empty());
-    let all = list(&storage, UnitMemberRoleFilter::default()).await;
-    let page = UnitMemberRoleStore::list(
-        &storage,
-        UnitMemberRoleFilter::default(),
-        &ListPagination::default().offset(1).limit(1),
-    )
-    .await
-    .expect("page assignments");
-    assert_eq!(page.len(), 1);
-    assert_eq!(
-        page.first().expect("one assignment").member_id,
-        all.get(1).expect("second assignment").member_id
-    );
-    assert_eq!(
-        page.first().expect("one assignment").role_id,
-        all.get(1).expect("second assignment").role_id
-    );
+    assert_assignment_pagination(&storage).await;
     for _ in 0..2 {
         UnitMemberRoleStore::delete(&storage, unit.owner_membership_id, first)
             .await

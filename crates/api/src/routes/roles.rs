@@ -171,7 +171,7 @@ async fn create_role(
     Path(unit_id): Path<UnitId>,
     Json(body): Json<CreateRoleRequest>,
 ) -> Result<(StatusCode, Json<RoleSummary>)> {
-    let actor_id = require_user(principal)?;
+    let actor_id = require_user(&principal)?;
     let name = body.display_name.trim();
     validate_role(
         Some(name),
@@ -205,7 +205,7 @@ async fn update_role(
     Path((unit_id, role_id)): Path<(UnitId, RoleId)>,
     Json(body): Json<UpdateRoleRequest>,
 ) -> Result<Json<RoleSummary>> {
-    let actor_id = require_user(principal)?;
+    let actor_id = require_user(&principal)?;
     let name = body.display_name.map(|name| name.trim().to_owned());
     validate_role(
         name.as_deref(),
@@ -236,7 +236,7 @@ async fn delete_role(
     Principal(principal): Principal,
     Path((unit_id, role_id)): Path<(UnitId, RoleId)>,
 ) -> Result<StatusCode> {
-    let actor_id = require_user(principal)?;
+    let actor_id = require_user(&principal)?;
     UnitRoleManagementStore::delete_managed_role(storage.as_ref(), actor_id, unit_id, role_id)
         .await?;
     Ok(StatusCode::NO_CONTENT)
@@ -251,7 +251,7 @@ async fn assign_role(
     Principal(principal): Principal,
     Path((unit_id, member_id, role_id)): Path<(UnitId, MemberId, RoleId)>,
 ) -> Result<StatusCode> {
-    let actor_id = require_user(principal)?;
+    let actor_id = require_user(&principal)?;
     UnitRoleManagementStore::assign_managed_role(
         storage.as_ref(),
         actor_id,
@@ -272,7 +272,7 @@ async fn remove_role(
     Principal(principal): Principal,
     Path((unit_id, member_id, role_id)): Path<(UnitId, MemberId, RoleId)>,
 ) -> Result<StatusCode> {
-    let actor_id = require_user(principal)?;
+    let actor_id = require_user(&principal)?;
     UnitRoleManagementStore::remove_managed_role(
         storage.as_ref(),
         actor_id,
@@ -295,7 +295,7 @@ async fn reorder_roles(
     Path(unit_id): Path<UnitId>,
     Json(body): Json<ReorderRolesRequest>,
 ) -> Result<Json<ListRolesResponse>> {
-    let actor_id = require_user(principal)?;
+    let actor_id = require_user(&principal)?;
     let roles = UnitRoleManagementStore::reorder_managed_roles(
         storage.as_ref(),
         actor_id,

@@ -126,7 +126,7 @@ async fn create_rank(
     Path(unit_id): Path<UnitId>,
     Json(body): Json<CreateRankRequest>,
 ) -> Result<(StatusCode, Json<RankSummary>)> {
-    let actor_id = require_user(principal)?;
+    let actor_id = require_user(&principal)?;
     let slug = body.slug.trim().to_owned();
     let display_name = body.display_name.map(|value| value.trim().to_owned());
     validate_rank(
@@ -163,7 +163,7 @@ async fn update_rank(
     Path((unit_id, rank_id)): Path<(UnitId, RankId)>,
     Json(body): Json<UpdateRankRequest>,
 ) -> Result<Json<RankSummary>> {
-    let actor_id = require_user(principal)?;
+    let actor_id = require_user(&principal)?;
     let slug = body.slug.map(|value| value.trim().to_owned());
     let display_name = body
         .display_name
@@ -202,7 +202,7 @@ async fn delete_rank(
 ) -> Result<StatusCode> {
     UnitRankManagementStore::delete_managed_rank(
         storage.as_ref(),
-        require_user(principal)?,
+        require_user(&principal)?,
         unit_id,
         rank_id,
     )
@@ -223,7 +223,7 @@ async fn reorder_ranks(
 ) -> Result<Json<ListRanksResponse>> {
     let ranks = UnitRankManagementStore::reorder_managed_ranks(
         storage.as_ref(),
-        require_user(principal)?,
+        require_user(&principal)?,
         unit_id,
         body.rank_ids,
     )
