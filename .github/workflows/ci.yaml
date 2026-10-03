@@ -375,11 +375,14 @@ jobs:
     needs:
       - cargo-audit
       - changes
-      - web
       - rust-build
       - rust-lint
       - rust-test
       - integration-test
+      - web-build
+      - web-lint
+      - web-test
+      - web-e2e
     runs-on: ubuntu-26.04
     permissions: {}
     steps:
