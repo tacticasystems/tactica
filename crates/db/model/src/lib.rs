@@ -100,13 +100,8 @@ pub struct ListPagination {
     pub limit: Limit,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub struct Offset(pub i64);
-impl Default for Offset {
-    fn default() -> Self {
-        Self(0)
-    }
-}
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub struct Limit(pub i64);
