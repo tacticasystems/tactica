@@ -34,12 +34,18 @@ runs one. Mise is mandatory and pins the Rust toolchain plus required
 components.
 
 ```
+# rust
 mise run build
 mise run test                # hermetic tests: unit/serde/validation, no llm provider, no network
 mise run clippy
-mise run complexity-check    # cognitive complexity ratchet: offender count must not grow
-mise run complexity          # advisory: list every function above the threshold
 mise run fmt-check           # check formatting with rustfmt
+
+# web
+mise run //web:build
+mise run //web:test                # hermetic tests: unit/validation
+mise run //web:test-e2e            # end-to-end tests with playwright (takes a long time, avoid unless you absolutely can't)
+mise run //web:lint
+mise run //web:fmt-check           # check formatting with oxfmt
 ```
 
 Integration/E2E tests must **never** target the user's own resources.
