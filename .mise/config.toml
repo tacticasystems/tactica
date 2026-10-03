@@ -47,21 +47,13 @@ run = ["cargo fmt --all -- --check", "taplo fmt --check"]
 description = "Run rustfmt on the entire workspace"
 run = "cargo clippy --workspace --all-targets --all-features -- -D warnings"
 
+[tasks.lint]
+description = "Run fmt, clippy, typos, taplo, machete"
+depends = ["fmt-check", "clippy"]
+
 [tasks.check]
 description = "Run all CI checks locally"
 depends = ["lint", "test", "doc", "audit"]
-
-[tasks.lint]
-description = "Run fmt, clippy, typos, taplo, machete"
-run = [
-  "cargo fmt --all -- --check",
-  "pnpm -C web run fmt:check",
-  "pnpm -C web run lint",
-  "cargo clippy --workspace --all-targets --all-features -- -D warnings",
-  "cargo machete",
-  "taplo fmt --check",
-  "typos",
-]
 
 [tasks.test]
 description = "Run tests with nextest"
