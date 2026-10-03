@@ -144,7 +144,7 @@ jobs:
           rust: false
           pnpm: true
 
-      - name: Check formatting
+      - name: Build the web app
         run: mise run //web:build
 
   web-test:
