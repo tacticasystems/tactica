@@ -58,12 +58,11 @@ jobs:
       cache-scope: api
       file: Dockerfile
       meta-images: ghcr.io/${{ github.repository }}-api
-      meta-flavor: latest=false
       meta-tags: |
-        type=semver,pattern={{version}},value=${{ needs.release.outputs.version }}
-        type=semver,pattern={{major}}.{{minor}},value=${{ needs.release.outputs.version }},enable=${{ needs.release.outputs.stable == 'true' }}
-        type=raw,value=latest,enable=${{ needs.release.outputs.stable == 'true' }}
-        type=raw,value=rolling,enable=${{ needs.release.outputs.stable == 'true' }}
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=raw,value=rolling,enable=${{ github.event_name == 'release' }}
+        type=ref,event=branch
       output: image
       platforms: linux/amd64,linux/arm64
       push: true
@@ -94,12 +93,11 @@ jobs:
       context: web
       file: docker/Dockerfile
       meta-images: ghcr.io/${{ github.repository }}-web
-      meta-flavor: latest=false
       meta-tags: |
-        type=semver,pattern={{version}},value=${{ needs.release.outputs.version }}
-        type=semver,pattern={{major}}.{{minor}},value=${{ needs.release.outputs.version }},enable=${{ needs.release.outputs.stable == 'true' }}
-        type=raw,value=latest,enable=${{ needs.release.outputs.stable == 'true' }}
-        type=raw,value=rolling,enable=${{ needs.release.outputs.stable == 'true' }}
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=raw,value=rolling,enable=${{ github.event_name == 'release' }}
+        type=ref,event=branch
       output: image
       platforms: linux/amd64,linux/arm64
       push: true
