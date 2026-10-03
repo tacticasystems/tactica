@@ -1,3 +1,8 @@
+monorepo_root = true
+
+[monorepo]
+config_roots = ["web"]
+
 [settings]
 experimental = true
 auto_env = true
@@ -8,6 +13,7 @@ binstall_native = true
 
 [env]
 _.file = ".env"
+_.path = ["{{ config_root }}/web/node_modules/.bin"]
 RUST_BACKTRACE = "1"
 
 [tools]
@@ -51,7 +57,38 @@ run = [
 
 [tasks.test]
 description = "Run tests with nextest"
-run = "cargo nextest run --workspace --all-features --no-fail-fast"
+run = "cargo nextest run --workspace --all-features --no-fail-fast -E 'not binary(/^integration/)'"
+
+[tasks.test-archive]
+description = "Build test archive for CI"
+run = '''
+set -eu
+mkdir -p target/nextest
+cargo nextest archive --workspace --all-features --locked \
+  --archive-file "{{ config_root }}/target/nextest/workspace.tar.zst"
+cargo build --workspace --all-features --locked --bin tactica-api
+cp "{{ config_root }}/target/debug/tactica-api" "{{ config_root }}/target/nextest/tactica-api"
+'''
+
+[tasks.test-from-archive]
+description = "Run the hermetic suite from the archive `test-archive` built (no compile, no doctests)"
+run = '''
+cargo-nextest nextest run --profile ci --workspace-remap . \
+  --archive-file "{{ config_root }}/target/nextest/workspace.tar.zst" \
+  -E 'not binary(/^integration/)'
+'''
+
+[tasks.test-int-from-archive]
+description = "Run the integration tests from the archive `test-archive` built"
+run = '''
+cargo-nextest nextest run --profile ci --workspace-remap . \
+  --archive-file "{{ config_root }}/target/nextest/workspace.tar.zst" \
+  --run-ignored all -E 'binary(/^integration/)'
+'''
+
+[tasks.test-int]
+description = "Run the integration tests"
+run = "cargo nextest run --workspace --features integration --locked --run-ignored all -E 'binary(/^integration/)'"
 
 [tasks.audit]
 description = "Run cargo-deny checks"

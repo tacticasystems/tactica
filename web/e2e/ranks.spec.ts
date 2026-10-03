@@ -260,7 +260,7 @@ test("refetches preserve local edits and navigation protection without overwriti
   );
   if (info.project.name === "mobile")
     await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
-  await page.getByRole("link", { name: "Personnel", exact: true }).click();
+  await page.getByRole("link", { name: "Members", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("unsaved changes");
   await page.getByRole("button", { name: "Keep editing", exact: true }).click();
   await page.getByRole("button", { name: "Save rank", exact: true }).click();
@@ -535,7 +535,7 @@ test("member view and edit keep the roster compact and refresh rank tabs", async
   await expect(page.getByText("1 member has this rank.")).toBeVisible();
   if (info.project.name === "mobile")
     await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
-  await page.getByRole("link", { name: "Personnel", exact: true }).click();
+  await page.getByRole("link", { name: "Members", exact: true }).click();
   await expect(page.getByRole("button", { name: /Change rank/ })).toHaveCount(0);
   await page.screenshot({ path: info.outputPath("member-roster.png"), fullPage: true });
   await page.getByRole("link", { name: /Person 0$/, exact: true }).click();

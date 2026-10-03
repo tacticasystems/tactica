@@ -65,7 +65,7 @@ export function MemberEditor({
     changedRoles.every((role) => canAssignRole(access, role));
   const returnToMember = () =>
     void navigate({
-      to: "/units/$unitId/personnel/$memberId",
+      to: "/units/$unitId/members/$memberId",
       params: { unitId: unit.id, memberId: member.id },
       ignoreBlocker: true,
     });

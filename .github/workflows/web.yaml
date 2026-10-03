@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  audit:
+  web-audit:
     name: Audit web dependencies
     runs-on: ubuntu-26.04
     steps:
@@ -26,7 +26,7 @@ jobs:
           pnpm: 'true'
       - run: pnpm --dir web audit
 
-  lint:
+  web-lint:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -34,9 +34,10 @@ jobs:
         with:
           rust: 'false'
           pnpm: 'true'
-      - run: pnpm --dir web run lint
+      - run: mise run //web:lint
+      - run: mise run //web:fmt-check
 
-  fmt:
+  web-test:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -44,17 +45,7 @@ jobs:
         with:
           rust: 'false'
           pnpm: 'true'
-      - run: pnpm --dir web run fmt:check
-
-  test:
-    runs-on: ubuntu-26.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: ./.github/actions/setup-repo
-        with:
-          rust: 'false'
-          pnpm: 'true'
-      - run: pnpm --dir web run test
+      - run: mise run //web:test
 
   e2e:
     name: E2E (${{ matrix.project }})
@@ -165,8 +156,7 @@ jobs:
         with:
           rust: 'false'
           pnpm: 'true'
-      - run: pnpm --dir web run typecheck
-      - run: pnpm --dir web run build
+      - run: mise run //web:build
 
   versions:
     runs-on: ubuntu-26.04

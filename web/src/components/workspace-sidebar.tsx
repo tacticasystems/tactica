@@ -35,7 +35,6 @@ import {
   SidebarGroup,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -92,7 +91,7 @@ function UnitSwitcher({ unit, preview }: Pick<WorkspaceSidebarProps, "unit" | "p
                 onValueChange={(unitId) => {
                   close();
                   if (unitId !== unit?.id)
-                    void navigate({ to: "/units/$unitId/personnel", params: { unitId } });
+                    void navigate({ to: "/units/$unitId/members", params: { unitId } });
                 }}
               >
                 {preview ? (
@@ -141,7 +140,7 @@ function UnitSwitcher({ unit, preview }: Pick<WorkspaceSidebarProps, "unit" | "p
 function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
   const { setOpenMobile } = useSidebar();
   const location = useLocation();
-  const currentRouteId = useRouterState({ select: (state) => state.matches.at(-1).routeId });
+  const currentRouteId = useRouterState({ select: (state) => state.matches.at(-1)?.routeId ?? "" });
   const close = () => setOpenMobile(false);
 
   const links = [
@@ -179,7 +178,7 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
           to: "/units/$unitId/roles",
         },
       ],
-    }
+    },
   ] as const;
 
   return (
@@ -190,7 +189,7 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
             {unit ? (
               <>
                 {links.map((link) =>
-                  link.children ? (
+                  "children" in link ? (
                     <SidebarMenuItem key={link.group}>
                       <Collapsible defaultOpen>
                         <CollapsibleTrigger asChild>
@@ -222,25 +221,17 @@ function UnitNavigation({ unit }: Pick<WorkspaceSidebarProps, "unit">) {
                     <SidebarMenuItem key={link.page}>
                       <SidebarMenuButton
                         asChild
-                        isActive={
-                          location.pathname === `/units/${unit.id}/${link.page}` ||
-                          (link.page === "ranks" &&
-                            location.pathname.startsWith(`/units/${unit.id}/ranks/`)) ||
-                          (link.page === "personnel" && location.pathname.includes("/personnel/"))
-                        }
+                        isActive={location.pathname === `/units/${unit.id}/${link.page}`}
                       >
                         <Link
                           to={`/units/$unitId/${link.page}`}
                           params={{ unitId: unit.id }}
-                          onClick={link.close}
+                          onClick={close}
                         >
                           {link.icon}
                           <span>{link.title}</span>
                         </Link>
                       </SidebarMenuButton>
-                      {link.page === "personnel" && (
-                        <SidebarMenuBadge>{unit.member_count}</SidebarMenuBadge>
-                      )}
                     </SidebarMenuItem>
                   ),
                 )}

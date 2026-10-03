@@ -1,0 +1,34 @@
+[tasks.build]
+description = "Run formatting checks on the web UI"
+run = [
+  "pnpm run typecheck",
+  "pnpm run build",
+]
+
+[tasks.audit]
+description = "Audit all installed dependencies for known vulnerabilities"
+run = "pnpm audit"
+
+[tasks.fmt]
+description = "Run formatting checks on the web UI"
+run = "pnpm run fmt"
+
+[tasks.fmt-check]
+description = "Run formatting checks on the web UI"
+run = "pnpm run fmt:check"
+
+[tasks.lint]
+description = "Run linter checks on the web UI"
+run = "pnpm run lint"
+
+[tasks.test]
+description = "Run tests with vitest"
+run = "pnpm run test"
+
+[tasks.test-e2e]
+description = "Run playwright tests"
+run = "pnpm run test:e2e"
+
+[tasks.test-e2e-api]
+description = "Run playwright tests against the API"
+run = "pnpm run test:e2e:api"

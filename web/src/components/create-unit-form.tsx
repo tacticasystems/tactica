@@ -16,7 +16,7 @@ export function CreateUnitForm({ onCancel }: { onCancel: () => void }) {
     mutationFn: ({ name, slug }: { name: string; slug: string }) => createUnit(name, slug),
     onSuccess: async (unit) => {
       await queryClient.invalidateQueries({ queryKey: unitsOptions().queryKey });
-      await navigate({ to: "/units/$unitId/personnel", params: { unitId: unit.id } });
+      await navigate({ to: "/units/$unitId/members", params: { unitId: unit.id } });
     },
   });
 

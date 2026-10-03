@@ -13,8 +13,8 @@ import { sessionSnapshot } from "./lib/api";
 import { Button } from "./components/ui/button";
 import { AuthPage } from "./pages/auth";
 import { UnitsPage } from "./pages/units";
-import { MemberPage } from "./pages/member";
-import { PersonnelPage } from "./pages/personnel";
+import { createResourceRoutes } from "./components/resource-routes";
+import { membersResource } from "./resources/members";
 import { AdminRanksPage } from "./pages/admin-ranks";
 import { RankPage } from "./pages/rank";
 import { RanksPage } from "./pages/ranks";
@@ -76,21 +76,7 @@ const overview = createRoute({
   path: "/overview",
   component: OverviewPage,
 });
-const personnel = createRoute({
-  getParentRoute: () => unit,
-  path: "/members",
-  component: PersonnelPage,
-});
-const member = createRoute({
-  getParentRoute: () => unit,
-  path: "/members/$memberId",
-  component: MemberPage,
-});
-const editMember = createRoute({
-  getParentRoute: () => unit,
-  path: "/members/$memberId/edit",
-  component: () => <MemberPage editing />,
-});
+const members = createResourceRoutes(unit, "/members", "memberId", membersResource);
 const roles = createRoute({
   getParentRoute: () => unit,
   path: "/roles",
@@ -144,9 +130,9 @@ export const router = createRouter({
     unit.addChildren([
       unitIndex,
       overview,
-      personnel,
-      member,
-      editMember,
+      members.list,
+      members.view,
+      members.edit,
       ranks,
       rank,
       adminRanks,

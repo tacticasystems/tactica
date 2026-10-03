@@ -17,7 +17,7 @@ export function RosterPagination({
   onPageChange: (offset: number) => void;
 }) {
   return (
-    <Pagination className="pagination" aria-label="Personnel pages">
+    <Pagination className="pagination" aria-label="Roster pages">
       <span>
         Showing {offset + (count ? 1 : 0)}–{offset + count} of {total}
       </span>

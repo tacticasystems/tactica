@@ -176,7 +176,7 @@ test("the personnel table shows pills and refreshes after assigning and removing
   await workspace(page);
   if (testInfo.project.name === "mobile")
     await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
-  await page.getByRole("link", { name: "Personnel", exact: true }).click();
+  await page.getByRole("link", { name: "Members", exact: true }).click();
   const person = page
     .getByRole("row")
     .filter({ has: page.getByRole("list", { name: "Person 0 roles", exact: true }) });
@@ -195,7 +195,7 @@ test("the personnel table shows pills and refreshes after assigning and removing
   // Client navigation exercises the cached roster rather than reloading the app.
   if (testInfo.project.name === "mobile")
     await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
-  await page.getByRole("link", { name: "Personnel", exact: true }).click();
+  await page.getByRole("link", { name: "Members", exact: true }).click();
   await expect(
     person.getByRole("list", { name: "Person 0 roles", exact: true }).getByRole("listitem"),
   ).toHaveText(["Medic"]);
@@ -210,7 +210,7 @@ test("the personnel table shows pills and refreshes after assigning and removing
   await expect(page.getByText("Person 0 removed from Medic.", { exact: true })).toBeVisible();
   if (testInfo.project.name === "mobile")
     await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
-  await page.getByRole("link", { name: "Personnel", exact: true }).click();
+  await page.getByRole("link", { name: "Members", exact: true }).click();
   await expect(
     person.getByRole("list", { name: "Person 0 roles", exact: true }).getByRole("listitem"),
   ).toHaveCount(0);
@@ -341,7 +341,7 @@ test("role and roster caches refresh after a committed deletion loses its respon
   await expect(page.locator(".role-row").filter({ hasText: "Medic" })).toHaveCount(0);
   if (testInfo.project.name === "mobile")
     await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
-  await page.getByRole("link", { name: "Personnel", exact: true }).click();
+  await page.getByRole("link", { name: "Members", exact: true }).click();
   await expect(pills).toHaveCount(0);
 });
 
@@ -376,7 +376,7 @@ for (const initiallyAssigned of [false, true]) {
     ).toBeVisible();
     if (testInfo.project.name === "mobile")
       await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
-    await page.getByRole("link", { name: "Personnel", exact: true }).click();
+    await page.getByRole("link", { name: "Members", exact: true }).click();
     await expect(pills).toHaveCount(initiallyAssigned ? 0 : 1);
   });
 }

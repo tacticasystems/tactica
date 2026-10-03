@@ -2,69 +2,49 @@
 name: Release containers
 
 on:
+  push:
+    branches:
+      - main
   release:
     types: [published]
 
-permissions:
-  contents: read
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.release.tag_name }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name != 'release' }}
 
 jobs:
-  release:
-    name: Read release metadata
-    if: startsWith(github.event.release.tag_name, 'tactica-api-v') || startsWith(github.event.release.tag_name, 'web-v')
-    runs-on: ubuntu-latest
+  versions:
+    name: Get Versions
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
     outputs:
-      component: ${{ steps.release.outputs.component }}
-      version: ${{ steps.release.outputs.version }}
-      stable: ${{ steps.release.outputs.stable }}
-      rust-version: ${{ steps.release.outputs.rust-version }}
-      node-version: ${{ steps.release.outputs.node-version }}
-      pnpm-version: ${{ steps.release.outputs.pnpm-version }}
+      rust-version: ${{ steps.versions.outputs.rust-version }}
+      node-version: ${{ steps.versions.outputs.node-version }}
+      pnpm-version: ${{ steps.versions.outputs.pnpm-version }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.event.release.tag_name }}
           persist-credentials: false
 
-      - name: Read component, version, and build tools
-        id: release
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
+      - name: Setup toolchain
+        uses: ./.github/actions/setup-repo
+        with:
+          rust: false
+
+      - name: Fetch versions via Mise
+        id: versions
         run: |
-          python3 - <<'PY'
-          import os
-          import re
-          import tomllib
-
-          number = r"(?:0|[1-9][0-9]*)"
-          identifiers = r"[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*"
-          semver = rf"{number}\.{number}\.{number}(?:-{identifiers})?(?:\+{identifiers})?"
-          tag = os.environ["RELEASE_TAG"]
-          match = re.fullmatch(rf"(tactica-api|web)-v({semver})", tag)
-          if not match:
-              raise SystemExit(f"Unsupported release tag: {tag}")
-
-          component, version = match.groups()
-          stable = "-" not in version.split("+", 1)[0] and os.environ["RELEASE_PRERELEASE"] == "false"
-          with open(".mise/config.toml", "rb") as config:
-              tools = tomllib.load(config)["tools"]
-          outputs = {"component": component, "version": version, "stable": str(stable).lower()}
-          required_tools = ("rust",) if component == "tactica-api" else ("node", "pnpm")
-          outputs.update({f"{tool}-version": tools[tool] for tool in required_tools})
-          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-              for key, value in outputs.items():
-                  output.write(f"{key}={value}\n")
-          PY
+          {
+            echo "rust-version=$(mise tool rust --active)"
+            echo "node-version=$(mise tool node --active)"
+            echo "pnpm-version=$(mise tool pnpm --active)"
+          } >> "${GITHUB_OUTPUT}"
 
   docker-api:
     name: Release API container
-    needs: release
-    if: needs.release.outputs.component == 'tactica-api'
+    needs: versions
     permissions:
       contents: read
       id-token: write
@@ -73,7 +53,7 @@ jobs:
     with:
       build-args: |
         BIN=tactica-api
-        RUST_VERSION=${{ needs.release.outputs.rust-version }}
+        RUST_VERSION=${{ needs.versions.outputs.rust-version }}
       cache: true
       cache-scope: api
       file: Dockerfile
@@ -99,8 +79,7 @@ jobs:
 
   docker-web:
     name: Release Web container
-    needs: release
-    if: needs.release.outputs.component == 'web'
+    needs: versions
     permissions:
       contents: read
       id-token: write
@@ -108,8 +87,8 @@ jobs:
     uses: docker/github-builder/.github/workflows/build.yml@58cb9f5b71b1836d6f690c1e95effdeb9b98cb8a # v1.17.0
     with:
       build-args: |
-        NODE_VERSION=${{ needs.release.outputs.node-version }}
-        PNPM_VERSION=${{ needs.release.outputs.pnpm-version }}
+        NODE_VERSION=${{ needs.versions.outputs.node-version }}
+        PNPM_VERSION=${{ needs.versions.outputs.pnpm-version }}
       cache: true
       cache-scope: web
       context: web

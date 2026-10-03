@@ -57,7 +57,7 @@ const test = base.extend<{ workspace: { username: string; unitId: string; unitNa
     await page.getByLabel("Unit name", { exact: true }).fill(unitName);
     await page.getByLabel("Unit handle", { exact: true }).fill(username.replaceAll("_", "-"));
     await page.getByRole("button", { name: "Create unit", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Personnel", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Members", exact: true })).toBeVisible();
     await expect(page.getByRole("table")).toBeVisible();
     const unitId = new URL(page.url()).pathname.split("/")[2];
     await use({ username, unitId, unitName });
@@ -88,7 +88,7 @@ test("registration, unit creation, profile and sign-in survive a new session", a
     .getByRole("link")
     .filter({ has: page.getByRole("heading", { name: workspace.unitName, exact: true }) })
     .click();
-  await expect(page.getByRole("heading", { name: "Personnel", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Members", exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("row").filter({ hasText: workspace.username })).toBeVisible();
 });

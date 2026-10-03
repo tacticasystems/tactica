@@ -31,9 +31,9 @@ function LoadedWorkspace({ unitId }: { unitId: string }) {
   const query = useQuery(options);
   const user = useQuery({ ...userOptions(), enabled: !preview });
   const location = useLocation();
-  const label = /\/personnel\/[^/]+\/edit$/.test(location.pathname)
+  const label = /\/members\/[^/]+\/edit$/.test(location.pathname)
     ? "Edit member"
-    : /\/personnel\/[^/]+$/.test(location.pathname)
+    : /\/members\/[^/]+$/.test(location.pathname)
       ? "Member"
       : location.pathname.endsWith("/ranks") || /\/ranks\/[^/]+$/.test(location.pathname)
         ? "Ranks"
@@ -43,7 +43,7 @@ function LoadedWorkspace({ unitId }: { unitId: string }) {
             ? "Profile"
             : location.pathname.endsWith("/overview")
               ? "Overview"
-              : "Personnel";
+              : "Members";
 
   useEffect(() => {
     document.title = `${label}${query.data ? ` · ${query.data.display_name}` : ""} · Tactica`;

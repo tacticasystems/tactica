@@ -94,7 +94,7 @@ function RankMembers({ rank }: { rank: Rank }) {
                       <div>
                         <Link
                           className="member-profile-link"
-                          to="/units/$unitId/personnel/$memberId"
+                          to="/units/$unitId/members/$memberId"
                           params={{ unitId: unit.id, memberId: member.id }}
                         >
                           {memberName}

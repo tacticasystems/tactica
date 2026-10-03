@@ -11,6 +11,9 @@ publish.workspace = true
 name = "tactica-api"
 path = "src/main.rs"
 
+[features]
+integration = []
+
 [dependencies]
 tokio.workspace = true
 axum.workspace = true
@@ -35,6 +38,26 @@ tactica-permissions.workspace = true
 serde_json = "1.0"
 testcontainers-modules = { version = "0.15", features = ["postgres"] }
 tower = { version = "0.5", features = ["util"] }
+
+[[test]]
+name = "integration_auth_refresh"
+path = "tests/auth_refresh.rs"
+required-features = ["integration"]
+
+[[test]]
+name = "integration_rank_writes"
+path = "tests/rank_writes.rs"
+required-features = ["integration"]
+
+[[test]]
+name = "integration_role_writes"
+path = "tests/role_writes.rs"
+required-features = ["integration"]
+
+[[test]]
+name = "integration_unit_reads"
+path = "tests/unit_reads.rs"
+required-features = ["integration"]
 
 [lints]
 workspace = true

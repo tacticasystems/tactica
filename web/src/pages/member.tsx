@@ -17,12 +17,13 @@ import {
   canManageMemberProfiles,
   canManageRoles,
 } from "../lib/permissions";
+import type { Member } from "../lib/types";
 import { ApiError } from "../lib/session-client";
 
 export function MemberPage({ editing = false }: { editing?: boolean }) {
   const { memberId } = useParams({ strict: false });
   const { unit, source, queryKey } = useWorkspace();
-  const member = useQuery({
+  const member = useQuery<Member>({
     queryKey: [...queryKey, "member", memberId],
     queryFn: ({ signal }) => source.member(unit.id, memberId!, signal),
   });

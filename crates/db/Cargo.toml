@@ -7,6 +7,9 @@ edition.workspace = true
 repository.workspace = true
 publish.workspace = true
 
+[features]
+integration = []
+
 [dependencies]
 async-trait.workspace = true
 diesel.workspace = true
@@ -22,6 +25,21 @@ tactica-permissions.workspace = true
 tokio.workspace = true
 testcontainers-modules = { version = "0.15", features = ["postgres"] }
 tactica-db-schema = { workspace = true, features = ["migrations"] }
+
+[[test]]
+name = "integration_refresh_sessions"
+path = "tests/refresh_sessions.rs"
+required-features = ["integration"]
+
+[[test]]
+name = "integration_unit_create"
+path = "tests/unit_create.rs"
+required-features = ["integration"]
+
+[[test]]
+name = "integration_unit_member_roles"
+path = "tests/unit_member_roles.rs"
+required-features = ["integration"]
 
 [lints]
 workspace = true
