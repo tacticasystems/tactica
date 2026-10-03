@@ -258,7 +258,7 @@ test("refetches preserve local edits and navigation protection without overwriti
   await expect(page.getByRole("textbox", { name: /Description/ })).toHaveValue(
     "Local responsibilities",
   );
-  if (info.project.name === "mobile")
+  if (info.project.use.isMobile)
     await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
   await page.getByRole("link", { name: "Members", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("unsaved changes");
@@ -374,7 +374,7 @@ test("keyboard reordering saves lowest-first IDs and leaves failed order unchang
   page,
 }, info) => {
   const { writes, state } = await workspace(page);
-  if (info.project.name === "mobile")
+  if (info.project.use.isMobile)
     await page.getByRole("button", { name: "Reorder", exact: true }).click();
   const handle = page.getByRole("button", { name: "Reorder “Major”", exact: true });
   await handle.focus();
@@ -533,7 +533,7 @@ test("member view and edit keep the roster compact and refresh rank tabs", async
   const { writes } = await workspace(page, 32);
   await page.getByRole("tab", { name: "Members", exact: true }).click();
   await expect(page.getByText("1 member has this rank.")).toBeVisible();
-  if (info.project.name === "mobile")
+  if (info.project.use.isMobile)
     await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
   await page.getByRole("link", { name: "Members", exact: true }).click();
   await expect(page.getByRole("button", { name: /Change rank/ })).toHaveCount(0);
@@ -562,12 +562,10 @@ test("member view and edit keep the roster compact and refresh rank tabs", async
   await form.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(page).toHaveURL(/members\/member-0$/);
   await page.getByRole("link", { name: "Major", exact: true }).click();
-  await page.getByRole("tab", { name: "Members", exact: true }).click();
   await expect(page.getByText("2 members have this rank.")).toBeVisible();
   await expect(page.getByText("Person 0", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Ranks", exact: true }).last().click();
   await page.getByRole("link", { name: "Private", exact: true }).click();
-  await page.getByRole("tab", { name: "Members", exact: true }).click();
   await expect(page.getByText("103 members have this rank.")).toBeVisible();
   expect(writes).toEqual([
     { method: "PATCH", path: "/units/unit/members/member-0", body: { rank_id: "major" } },
@@ -712,13 +710,11 @@ test("rank directory searches, views members, and opens the selected admin edito
   await page.getByRole("searchbox", { name: "Search ranks" }).fill("pvt");
   await expect(page.getByRole("link", { name: "Major", exact: true })).toHaveCount(0);
   await page.getByRole("link", { name: "Private", exact: true }).click();
-  await page.getByRole("tab", { name: "Members", exact: true }).click();
   await expect(page.getByText("104 members have this rank.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Person 0", exact: true })).toHaveAttribute(
     "href",
     "/units/unit/members/member-0",
   );
-  await page.getByRole("tab", { name: "Details", exact: true }).click();
   await page.getByRole("link", { name: "Edit rank", exact: true }).click();
   await expect(page).toHaveURL(/admin\/ranks\?rankId=private$/);
   await expect(page.getByRole("textbox", { name: "Abbreviation", exact: true })).toHaveValue(
@@ -838,4 +834,32 @@ test("committed member drafts reconcile before later server changes", async ({ p
   await expect(page.getByRole("combobox")).toHaveText("Major");
   await expect(page.getByRole("checkbox", { name: "Medic", exact: true })).toBeChecked();
   await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeEnabled();
+});
+
+test("rank view stacks members beneath plain details and navigates through breadcrumbs", async ({
+  page,
+}, info) => {
+  await workspace(page);
+  await page.goto("/units/unit/ranks/major");
+  const breadcrumbs = page.getByRole("navigation", { name: "breadcrumb", exact: true });
+  await expect(breadcrumbs.locator("li")).toHaveText(["Test unit", "/", "Ranks", "/", "Major"]);
+  await expect(page.locator(".page-heading p")).toHaveText("Unit commander");
+  await expect(
+    page.locator(".page-heading").getByRole("link", { name: "Edit rank", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("tab")).toHaveCount(0);
+  const details = page.getByRole("region", { name: "Rank details", exact: true });
+  const members = page.getByRole("region", { name: "Major members", exact: true });
+  await expect(details).toHaveCSS("border-top-width", "0px");
+  await expect(members).toHaveCSS("border-top-width", "1px");
+  const detailsBox = await details.boundingBox();
+  const membersBox = await members.boundingBox();
+  expect(membersBox!.y).toBeGreaterThan(detailsBox!.y + detailsBox!.height);
+  await expect(page.getByText("1 member has this rank.")).toBeVisible();
+  await page.screenshot({ path: info.outputPath("rank-view-stacked.png"), fullPage: true });
+  await breadcrumbs.getByRole("link", { name: "Ranks", exact: true }).click();
+  await expect(page).toHaveURL(/\/ranks$/);
+  await page.getByRole("link", { name: "Private", exact: true }).click();
+  await expect(page.locator(".page-heading p")).toHaveText("Rank in Test unit.");
+  await expect(breadcrumbs.locator("[aria-current=page]")).toHaveText("Private");
 });

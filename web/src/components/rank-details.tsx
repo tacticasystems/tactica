@@ -35,7 +35,7 @@ export function RankDetails({ rank, children }: { rank?: Rank; children: ReactNo
   );
 }
 
-function RankMembers({ rank }: { rank: Rank }) {
+export function RankMembers({ rank }: { rank: Rank }) {
   const { unit, source, queryKey } = useWorkspace();
   const [search, setSearch] = useState("");
   const roster = useQuery({

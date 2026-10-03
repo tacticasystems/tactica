@@ -18,6 +18,7 @@ type AppShellProps = {
   preview?: boolean;
   accountName?: string;
   label: string;
+  parentBreadcrumb?: ReactNode;
   children: ReactNode;
 };
 
@@ -31,7 +32,14 @@ export function AppShell(props: AppShellProps) {
   );
 }
 
-function WorkspaceShell({ unit, preview = false, accountName, label, children }: AppShellProps) {
+function WorkspaceShell({
+  unit,
+  preview = false,
+  accountName,
+  label,
+  parentBreadcrumb,
+  children,
+}: AppShellProps) {
   return (
     <>
       <a className="skip-link" href="#main-content">
@@ -46,6 +54,12 @@ function WorkspaceShell({ unit, preview = false, accountName, label, children }:
               {unit && (
                 <>
                   <BreadcrumbItem>{unit.display_name}</BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                </>
+              )}
+              {parentBreadcrumb && (
+                <>
+                  <BreadcrumbItem>{parentBreadcrumb}</BreadcrumbItem>
                   <BreadcrumbSeparator />
                 </>
               )}

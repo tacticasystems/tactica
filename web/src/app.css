@@ -1766,7 +1766,22 @@ fieldset {
   min-width: 12rem;
 }
 .rank-view {
+  display: grid;
+  gap: 28px;
   max-width: 52rem;
+}
+.rank-summary {
+  min-width: 0;
+}
+.rank-summary .editor-heading {
+  margin-bottom: 20px;
+}
+.rank-summary .member-details {
+  padding: 0;
+}
+.page-heading:has(+ .rank-view) p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .rank-description {
   white-space: pre-wrap;
