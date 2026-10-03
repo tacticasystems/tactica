@@ -116,14 +116,36 @@ jobs:
       - name: Setup Mise
         uses: ./.github/actions/setup-repo
         with:
-          rust: true
-          pnpm: false
+          rust: false
+          pnpm: true
 
       - name: Check formatting
         run: mise run //web:fmt-check
 
       - name: Run linter
         run: mise run //web:lint
+
+  web-build:
+    if: >-
+      ${{ !(startsWith(github.head_ref, 'release-please--')
+      && github.event.pull_request.head.repo.full_name == github.repository) }}
+    name: Web Build
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Setup Mise
+        uses: ./.github/actions/setup-repo
+        with:
+          rust: false
+          pnpm: true
+
+      - name: Check formatting
+        run: mise run //web:build
 
   web-test:
     if: >-
@@ -141,10 +163,10 @@ jobs:
       - name: Setup Mise
         uses: ./.github/actions/setup-repo
         with:
-          rust: true
-          pnpm: false
+          rust: false
+          pnpm: true
 
-      - name: Check formatting
+      - name: Run tests
         run: mise run //web:test
 
   web-e2e:
@@ -346,21 +368,6 @@ jobs:
 
       - name: Run integration tests
         run: mise run test-int-from-archive
-
-  web:
-    name: Web
-    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.web == 'true' || needs.changes.outputs.rust == 'true'
-    needs: changes
-    permissions:
-      contents: read
-      id-token: write
-      packages: write
-      pull-requests: write
-    uses: ./.github/workflows/web.yaml
-    secrets:
-      E2E_S3_ACCESS_KEY_ID: ${{ secrets.E2E_S3_ACCESS_KEY_ID }}
-      E2E_S3_ENDPOINT: ${{ secrets.E2E_S3_ENDPOINT }}
-      E2E_S3_SECRET_ACCESS_KEY: ${{ secrets.E2E_S3_SECRET_ACCESS_KEY }}
 
   status:
     if: ${{ !cancelled() }}
