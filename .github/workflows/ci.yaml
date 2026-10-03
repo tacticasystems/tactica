@@ -342,6 +342,13 @@ jobs:
       - name: Run unit tests
         run: mise run test-from-archive
 
+      - uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Hermetic Tests
+          path: target/nextest/ci/junit.xml
+          reporter: java-junit
+
   integration-test:
     if: >-
       ${{ !(startsWith(github.head_ref, 'release-please--')
@@ -370,6 +377,13 @@ jobs:
 
       - name: Run integration tests
         run: mise run test-int-from-archive
+
+      - uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Integration Tests
+          path: target/nextest/ci/junit.xml
+          reporter: java-junit
 
   status:
     if: ${{ !cancelled() }}
