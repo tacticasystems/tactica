@@ -16,8 +16,14 @@ export default defineConfig({
     launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH },
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["iPhone 13"], defaultBrowserType: "chromium" } },
+    { name: "chromium-desktop", use: { ...devices["Desktop Chrome"] } },
+    { name: "chromium-mobile", use: { ...devices["iPhone 13"], defaultBrowserType: 'chromium' } },
+
+    { name: "firefox-desktop", use: { ...devices["Desktop Firefox"] } },
+    { name: "firefox-mobile", use: { ...devices["iPhone 13"], defaultBrowserType: 'firefox' } },
+
+    { name: "webkit-desktop", use: { ...devices["Desktop Safari"] } },
+    { name: "webkit-mobile", use: { ...devices["iPhone 13"], defaultBrowserType: 'webkit' } },
   ],
   webServer: [
     ...(apiEnabled

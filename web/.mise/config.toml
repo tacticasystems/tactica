@@ -29,3 +29,7 @@ run = "pnpm run test:e2e"
 [tasks.test-e2e-api]
 description = "Run playwright tests against the API"
 run = "pnpm run test:e2e:api"
+
+[tasks.check]
+description = "Run all CI checks locally"
+depends = ["build", "audit", "fmt-check", "lint", "test"]
