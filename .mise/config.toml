@@ -33,7 +33,11 @@ run = "rustup component add rustfmt clippy"
 
 [tasks.build]
 description = "Build all of the released components of the workspace"
-run = "cargo build --package tactica-api --release"
+run = "cargo build --workspace --all-features --locked"
+
+[tasks.build-release]
+description = "Build all of the released components of the workspace"
+run = "cargo build --package tactica-api --release --locked"
 
 [tasks.fmt]
 description = "Run rustfmt on the entire workspace"
