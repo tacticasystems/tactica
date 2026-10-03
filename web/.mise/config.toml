@@ -1,9 +1,6 @@
 [tasks.build]
 description = "Run formatting checks on the web UI"
-run = [
-  "pnpm run typecheck",
-  "pnpm run build",
-]
+run = ["pnpm run typecheck", "pnpm run build"]
 
 [tasks.audit]
 description = "Audit all installed dependencies for known vulnerabilities"

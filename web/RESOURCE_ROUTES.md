@@ -14,15 +14,13 @@ const members: ResourceDefinition<Member, MemberContext> = {
   apiBase: "/units/{unit_id}/members",
   label: "Member",
   pluralLabel: "Members",
-  name: member => member.display_name ?? member.username,
+  name: (member) => member.display_name ?? member.username,
   fields: [
     {
       id: "member",
       label: "Member",
       in: ["list"],
-      read: (member, context) => (
-        <MemberName member={member} unitId={context.unitId} />
-      ),
+      read: (member, context) => <MemberName member={member} unitId={context.unitId} />,
     },
   ],
   useResource: useMembersResource,
