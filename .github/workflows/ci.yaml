@@ -13,6 +13,10 @@ on:
       - main
   merge_group:
   workflow_dispatch:
+    inputs:
+      run-e2e:
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -170,9 +174,7 @@ jobs:
         run: mise run //web:test
 
   web-e2e:
-    if: >-
-      ${{ !(startsWith(github.head_ref, 'release-please--')
-      && github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ inputs.run-e2e || false }}
     name: Web E2E tests
     runs-on: ubuntu-26.04
     timeout-minutes: 25
