@@ -342,7 +342,7 @@ jobs:
       - name: Run unit tests
         run: mise run test-from-archive
 
-      - uses: dorny/test-reporter@v1
+      - uses: dorny/test-reporter@d1b5dff021aa968b288b02285a8bf47471c5928a # v3
         if: always()
         with:
           name: Hermetic Tests
@@ -378,7 +378,7 @@ jobs:
       - name: Run integration tests
         run: mise run test-int-from-archive
 
-      - uses: dorny/test-reporter@v1
+      - uses: dorny/test-reporter@d1b5dff021aa968b288b02285a8bf47471c5928a # v3
         if: always()
         with:
           name: Integration Tests
