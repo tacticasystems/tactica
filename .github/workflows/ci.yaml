@@ -37,7 +37,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Setup Mise
-        uses: ./.github/workflows/setup-repo
+        uses: ./.github/actions/setup-repo
         with:
           rust: true
           pnpm: false
@@ -86,7 +86,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Setup Mise
-        uses: ./.github/workflows/setup-repo
+        uses: ./.github/actions/setup-repo
         with:
           rust: true
           pnpm: false
@@ -114,7 +114,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Setup Mise
-        uses: ./.github/workflows/setup-repo
+        uses: ./.github/actions/setup-repo
         with:
           rust: true
           pnpm: false
@@ -145,7 +145,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Setup Mise
-        uses: ./.github/workflows/setup-repo
+        uses: ./.github/actions/setup-repo
         with:
           rust: true
           pnpm: false
@@ -174,7 +174,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Setup Mise
-        uses: ./.github/workflows/setup-repo
+        uses: ./.github/actions/setup-repo
         with:
           rust: true
           pnpm: false
