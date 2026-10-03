@@ -36,7 +36,8 @@ components.
 ```
 # rust
 mise run build
-mise run test                # hermetic tests: unit/serde/validation, no llm provider, no network
+mise run test                # hermetic tests: unit/serde/validation, no infrastructure, no network
+mise run test-int            # integration tests
 mise run clippy
 mise run fmt-check           # check formatting with rustfmt
 
