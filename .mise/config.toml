@@ -39,6 +39,14 @@ run = "cargo build --package tactica-api --release"
 description = "Run rustfmt on the entire workspace"
 run = ["cargo fmt --all", "pnpm -C web run fmt", "taplo fmt"]
 
+[tasks.fmt-check]
+description = "Run rustfmt on the entire workspace"
+run = ["cargo fmt --all -- --check", "taplo fmt --check"]
+
+[tasks.clippy]
+description = "Run rustfmt on the entire workspace"
+run = "cargo clippy --workspace --all-targets --all-features -- -D warnings"
+
 [tasks.check]
 description = "Run all CI checks locally"
 depends = ["lint", "test", "doc", "audit"]
