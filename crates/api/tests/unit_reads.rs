@@ -415,11 +415,12 @@ async fn unit_members_can_read_only_the_requested_units_roster_data() {
             .get(&format!("{base}/{suffix}?offset=100"), Some(&token))
             .await;
         assert_eq!(status, StatusCode::OK);
-        assert!(
+        assert_eq!(
             body.get(suffix)
                 .and_then(serde_json::Value::as_array)
                 .expect("empty page")
-                .is_empty()
+                .as_slice(),
+            &[] as &[serde_json::Value]
         );
     }
     for suffix in [
