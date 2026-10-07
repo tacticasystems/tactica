@@ -24,7 +24,7 @@ rust = "1.99.0"
 "github:bnjbvr/cargo-machete" = "0.9.2"
 "aqua:nextest-rs/nextest/cargo-nextest" = "0.9.146"
 "aqua:tamasfe/taplo" = "0.10.0"
-"aqua:crate-ci/typos" = "1.50.3"
+"aqua:crate-ci/typos" = "1.51.1"
 "aqua:grafana/k6" = "2.3.0"
 
 [tasks.rust-components]
