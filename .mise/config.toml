@@ -17,7 +17,7 @@ _.path = ["{{ config_root }}/web/node_modules/.bin"]
 RUST_BACKTRACE = "1"
 
 [tools]
-node = "26.10.0"
+node = "26.11.1"
 pnpm = "12.9.1"
 rust = "1.99.0"
 "aqua:EmbarkStudios/cargo-deny" = "0.20.2"
