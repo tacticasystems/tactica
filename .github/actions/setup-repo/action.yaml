@@ -34,7 +34,7 @@ runs:
       run: echo "MISE_SYSTEM_BREW_PREFIX=/tmp/brew" >> "${GITHUB_ENV}"
 
     - name: Install Mise
-      uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5
+      uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5
       with:
         bootstrap: ${{ inputs.bootstrap }}
         cache: ${{ inputs.cache }}
